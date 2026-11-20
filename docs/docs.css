@@ -84,6 +84,7 @@
     25% {
       translate: -6px;
     }
+
     75% {
       translate: 6px;
     }
@@ -93,6 +94,7 @@
     30% {
       rotate: -12deg;
     }
+
     60% {
       rotate: 8deg;
     }
@@ -113,17 +115,20 @@
 
 /* Colors fade; scale and translate move with the sheet's easing. Reduced motion keeps only the fades. */
 @utility transition-ui {
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease,
-    opacity 150ms ease,
-    box-shadow 150ms ease,
-    scale 200ms var(--ease-ios),
-    translate 200ms var(--ease-ios);
+  transition: background-color 150ms ease,
+  border-color 150ms ease,
+  color 150ms ease,
+  opacity 150ms ease,
+  box-shadow 150ms ease,
+  scale 200ms var(--ease-ios),
+  translate 200ms var(--ease-ios);
 
   @media (prefers-reduced-motion: reduce) {
-    transition-property: background-color, border-color, color, opacity, box-shadow;
+    transition-property: background-color,
+    border-color,
+    color,
+    opacity,
+    box-shadow;
     scale: none !important;
     translate: none !important;
   }
@@ -201,6 +206,7 @@
     color: var(--color-fg);
     font-size: 15px;
     line-height: 1.65;
+    touch-action: manipulation;
   }
 
   :where(a, button):focus-visible {
@@ -315,11 +321,11 @@
     margin: 0 auto;
     padding: 28px 20px;
 
-    & > :first-child {
+    &> :first-child {
       margin-top: 0;
     }
 
-    & > :last-child {
+    &> :last-child {
       margin-bottom: 0;
     }
 
@@ -392,6 +398,7 @@
 /* Class lists reused across the docs' own components. Utilities in markup still override these. */
 
 @layer components {
+
   /* Sized by `--icon-size`. */
   .icon {
     @apply inline-flex size-(--icon-size) shrink-0 [&_svg]:size-full;
@@ -453,6 +460,7 @@
   .swipe-action {
     @apply w-16 cursor-pointer text-xs font-semibold text-white;
   }
+
   /* Nav and TOC links hang off a continuous guide line; the current one grows a bar on top of it. The line is
      inset at the ends of each group so it starts and ends level with the labels (and the bar). */
   .guide-link {

@@ -139,7 +139,8 @@ export default defineConfig({
 
   // Oxfmt
   fmt: {
-    ignorePatterns: ['dist/**', 'docs-dist/**', 'package-lock.json'],
+    // Tailwind arbitrary values rely on whitespace remaining encoded with underscores.
+    ignorePatterns: ['dist/**', 'docs-dist/**', 'docs/docs.css', 'package-lock.json'],
     singleQuote: true,
     printWidth: 120,
     sortPackageJson: true,
