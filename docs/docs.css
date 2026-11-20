@@ -274,6 +274,44 @@ pre code {
   background: var(--bg-subtle);
 }
 
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.landing-features a {
+  display: grid;
+  gap: 4px;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: calc(10px * var(--radius-scale));
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.landing-features a:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+.landing-features strong {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .landing-secondary-ctas {
   display: flex;
   align-items: center;
@@ -922,6 +960,10 @@ td:first-child {
 @media (max-width: 768px) {
   .landing {
     padding-inline: 20px;
+  }
+
+  .landing-features {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .landing-actions {

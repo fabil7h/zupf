@@ -4,6 +4,27 @@ import { isDark, theme } from '../theme';
 import { Drawer } from './Drawer';
 import { Icon } from './Icon';
 
+const features = [
+  {
+    slug: 'drawer',
+    anchor: 'snap',
+    title: 'Drawer',
+    text: 'Snap points, nested sheets, iOS-style scaled background, any edge.',
+  },
+  {
+    slug: 'pull-to-refresh',
+    anchor: 'blog',
+    title: 'Pull to refresh',
+    text: 'On any scroller, with an indicator you style in plain CSS.',
+  },
+  {
+    slug: 'gestures',
+    anchor: 'list',
+    title: 'Gestures',
+    text: 'Swipe actions, double tap, long press and your own sequences.',
+  },
+];
+
 export function Landing() {
   const drawerTrigger = useRef<HTMLButtonElement>(null);
 
@@ -27,7 +48,8 @@ export function Landing() {
         <div class="landing-hero">
           <h1>zupf</h1>
           <p class="landing-description">
-            Tiny, accessible drawer and pull-to-refresh with native-feeling gestures and physics. No framework required.
+            Native-feeling bottom sheets, pull-to-refresh and gestures for the web. Any framework, zero dependencies,
+            13&nbsp;KB.
           </p>
           <div class="landing-ctas">
             <button class="btn btn-primary landing-primary" ref={drawerTrigger}>
@@ -37,6 +59,16 @@ export function Landing() {
               Try pull-to-refresh
             </a>
           </div>
+          <ul class="landing-features">
+            {features.map((f) => (
+              <li key={f.slug}>
+                <a href={href(f.slug, f.anchor)}>
+                  <strong>{f.title}</strong>
+                  <span>{f.text}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
           <div class="landing-secondary-ctas">
             <a class="landing-docs" href={href('getting-started')}>
               Documentation
@@ -49,9 +81,9 @@ export function Landing() {
 
         <Drawer id="landing-demo" trigger={drawerTrigger}>
           <div class="sheet-body landing-sheet">
-            <h2 data-zupf-title>A drawer for the web.</h2>
+            <h2 data-zupf-title>Drag me down.</h2>
             <p data-zupf-description>
-              Drag it down, swipe it, resize it, or focus it with the keyboard. zupf handles the difficult parts.
+              Or flick me, press Esc, tap outside, or Tab through me. Physics, focus trap and iOS quirks are handled.
             </p>
             <a class="btn btn-primary landing-sheet-cta" href={href('getting-started')}>
               Make it yours
