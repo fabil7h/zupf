@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { createPullToRefresh, type PullStatus, type PullToRefresh } from '../../src';
 import { href } from '../router';
 import { ThemeToggle } from './AnimatedIcons';
 import { Drawer } from './Drawer';
@@ -26,14 +27,68 @@ const features = [
 
 export function Landing() {
   const drawerTrigger = useRef<HTMLButtonElement>(null);
+  const refreshContent = useRef<HTMLElement>(null);
+  const pullToRefresh = useRef<PullToRefresh | null>(null);
+  const resetRefreshMessage = useRef<number | undefined>(undefined);
+  const [pullStatus, setPullStatus] = useState<PullStatus>('idle');
+  const [justRefreshed, setJustRefreshed] = useState(false);
 
   useEffect(() => {
     document.title = 'zupf';
   }, []);
 
+  useEffect(() => {
+    if (!refreshContent.current) return;
+
+    let active = true;
+    const instance = createPullToRefresh({
+      content: refreshContent.current,
+      mouse: true,
+      onRefresh: async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+        if (!active) return;
+        setJustRefreshed(true);
+        window.clearTimeout(resetRefreshMessage.current);
+        resetRefreshMessage.current = window.setTimeout(() => setJustRefreshed(false), 1800);
+      },
+    });
+    const unsubscribe = instance.subscribe((state) => setPullStatus(state.status));
+    pullToRefresh.current = instance;
+
+    return () => {
+      active = false;
+      unsubscribe();
+      instance.destroy();
+      pullToRefresh.current = null;
+      window.clearTimeout(resetRefreshMessage.current);
+    };
+  }, []);
+
+  const refreshLabel =
+    pullStatus === 'refreshing'
+      ? 'Refreshing…'
+      : pullStatus === 'ready'
+        ? 'Release to refresh'
+        : justRefreshed
+          ? 'Refreshed'
+          : 'Try pull-to-refresh';
+
   return (
-    <div data-zupf-wrapper class="min-h-screen bg-canvas">
-      <main class="relative isolate grid min-h-svh place-items-center overflow-hidden px-6 py-[72px] before:absolute before:inset-0 before:-z-1 before:bg-dots-hero max-md:px-5">
+    <div data-zupf-wrapper class="relative min-h-screen overflow-hidden bg-canvas">
+      <div data-zupf-ptr-indicator class="gap-2 text-xs font-medium text-muted">
+        <span data-zupf-ptr-spinner class="text-fg" />
+        <span>
+          {pullStatus === 'ready'
+            ? 'Release to refresh'
+            : pullStatus === 'refreshing'
+              ? 'Refreshing…'
+              : 'Pull to refresh'}
+        </span>
+      </div>
+      <main
+        ref={refreshContent}
+        class="relative isolate grid min-h-svh place-items-center overflow-hidden px-6 py-[72px] before:absolute before:inset-0 before:-z-1 before:bg-dots-hero max-md:px-5"
+      >
         <div class="absolute top-5 right-6 flex gap-1 max-md:top-3.5 max-md:right-3.5" aria-label="Page actions">
           <ThemeToggle />
         </div>
@@ -48,9 +103,17 @@ export function Landing() {
             <button class="btn btn-primary flex items-center justify-center" ref={drawerTrigger}>
               Open drawer
             </button>
-            <a class="btn flex items-center justify-center" href={href('pull-to-refresh')}>
-              Try pull-to-refresh
-            </a>
+            <button
+              type="button"
+              class="btn flex items-center justify-center"
+              disabled={pullStatus === 'refreshing'}
+              onClick={() => void pullToRefresh.current?.refresh()}
+            >
+              {refreshLabel}
+            </button>
+            <span class="sr-only" aria-live="polite">
+              {justRefreshed ? 'Page refreshed' : ''}
+            </span>
           </div>
           <ul class="mt-10 grid grid-cols-3 gap-3 text-left max-md:grid-cols-1">
             {features.map((f) => (
