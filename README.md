@@ -1,8 +1,8 @@
 # zupf
 
-A framework-agnostic, customizable drawer / bottom sheet, plus pull-to-refresh built on the same gestures. The drawer is ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
+A framework-agnostic, customizable drawer / bottom sheet, plus pull-to-refresh built on the same gestures and a recognizer for taps, long presses, swipes and custom gesture sequences. The drawer is ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
 
-- Zero dependencies, about 11 KB gzipped
+- Zero dependencies, about 13 KB gzipped
 - Works with plain HTML, React, Vue, Svelte, Solid, Lit and others: you render the markup, zupf adds the behavior
 - Snap points, four directions, nested sheets, scaled background, non-modal mode, handle-only dragging
 - Built-in accessibility: `role="dialog"`, focus trap, focus restore, Esc, outside press, `inert` background, scroll lock
@@ -172,6 +172,51 @@ Areas inside the content marked `data-zupf-no-drag` never start a pull. Inside a
 Instance: `refresh()`, `setOptions(partial)`, `getState()` → `{ status }` (`idle` | `pulling` | `ready` | `refreshing`), `subscribe(fn)`, `destroy()`, `status`.
 
 Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshed` | `cancelled`) on the indicator while it slides back, `data-pulling` on content, `--zupf-ptr-offset` / `--zupf-ptr-progress` custom properties, `--zupf-ptr-indicator-size`, `--zupf-ptr-spinner-color`.
+
+## Gestures
+
+Taps, long presses, swipes and any sequence of them on one element.
+
+```js
+import { createGestures } from 'zupf';
+
+const gestures = createGestures({
+  target: '#photo',
+  gestures: {
+    'double-tap': () => like(),
+    'long-press': () => openMenu(),
+    'hold+swipe': (e) => move(e.direction), // 'up' | 'down' | 'left' | 'right'
+  },
+});
+
+// A custom flow: tap, tap, then hold and swipe left.
+const off = gestures.on('tap tap hold+swipe-left', () => unlockDebugMenu());
+```
+
+A pattern is a list of presses separated by spaces (or an array). Each press is a combination of tokens joined with `+`, in the order they happen while the finger is down:
+
+| Token                                                 |                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `tap`                                                 | Pressed and released without holding or moving       |
+| `hold`                                                | Held still for `holdTime`                            |
+| `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right` | Moved `swipeDistance` that way. A turn adds a token. |
+| `swipe`                                               | Any direction                                        |
+
+Aliases: `double-tap` (`tap tap`), `triple-tap` (`tap tap tap`), `long-press` (`hold`). Examples: `'tap tap'`, `'hold+swipe-up'`, `'swipe-down+swipe-right'` (an L shape), `['tap', 'hold']`.
+
+A gesture fires as soon as no other bound pattern can still extend it. So `long-press` fires while the finger is still down, unless `hold+swipe` is also bound (then it fires on release). `tap` waits `interval` ms when `double-tap` is bound. A press that doesn't fit restarts the sequence from that press. `hold` is only recognized when a bound pattern uses it, so without one a slow press still taps or swipes.
+
+Handlers get `{ gesture, steps, direction, target, event }`. `steps` is what was performed, for example `[['tap'], ['hold', 'swipe-up']]`.
+
+Options: `target`, `gestures`, `holdTime` (500), `interval` (300, max ms between presses), `swipeDistance` (50), `slop` (10, px a tap / hold may move), `mouse` (true), `disabled` (false).
+
+Instance: `on(pattern, handler)` → `off`, `reset()`, `setOptions(partial)`, `getState()` → `{ pressed, steps }` (the sequence so far, for progress feedback), `subscribe(fn)`, `destroy()`.
+
+Browser defaults are derived from the bindings: `touch-action` blocks scrolling only on the axes that swipe from the start of a press, and `manipulation` stops double-tap zoom. Swipes after a `hold` keep native scrolling until the hold. With `hold` bound, the iOS callout, text selection and the Android context menu are turned off. A mouse hold or swipe that fires doesn't also click. A mouse swipe can still select text unless `hold` is bound (or you set `user-select: none`).
+
+Patterns that can never match throw when bound: `hold` must be first in a press and only once (`hold+swipe-up`, not `swipe-up+hold`), and the same direction twice in a row is one swipe. An exception in a handler or subscriber is reported with `reportError` and doesn't affect the others.
+
+Styling hooks: `data-pressed` and `data-holding` on the target.
 
 ## Framework recipes
 
