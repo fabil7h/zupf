@@ -5,10 +5,12 @@ import {
   css,
   dampen,
   directionSign,
+  DragGesture,
   getTranslate,
   isInput,
   isIOS,
   isMobileFirefox,
+  isScrolledAway,
   isVertical,
   noop,
   on,
@@ -16,7 +18,8 @@ import {
   translate,
   uid,
   type Cleanup,
-} from '../shared';
+  type DragEnd,
+} from '../core';
 import { getSnapOffsets, overlayOpacityAt, resolveRelease, resolveSnapRelease, snapFadeProgress } from './physics';
 import { preventScroll } from './prevent-scroll';
 import { restorePositionFixed, setPositionFixed } from './position-fixed';
@@ -220,16 +223,10 @@ export class Sheet {
   #layer: { content: HTMLElement };
 
   // drag
-  #pressed = false;
+  #gesture!: DragGesture;
   #allowedToDrag = false;
   #draggedThisPress = false;
-  #captureEl: Element | null = null;
   #justReleased = false;
-  #pointerStart = 0;
-  #pointerStartXY: { x: number; y: number } | null = null;
-  #wasBeyondThePoint = false;
-  #lastPointerEvent: PointerEvent | null = null;
-  #dragStartTime = 0;
   #openTime = 0;
   #lastTimeDragPrevented = 0;
   #sheetSize = 0;
@@ -421,26 +418,28 @@ export class Sheet {
 
   #bind(): Cleanup {
     const { content, overlay, handle } = this;
+    const gesture = (this.#gesture = new DragGesture(content, {
+      direction: () => this.#o.direction,
+      handle,
+      handleOnly: () => this.#o.handleOnly,
+      canStart: this.#canStartDrag,
+      onStart: this.#onDragStart,
+      onMove: (e, distance) => this.#drag(e, distance),
+      onEnd: (e, info) => this.#release(e, info),
+    }));
     return chain(
-      on(content, 'pointerdown', this.#onContentPointerDown),
-      on(content, 'pointermove', this.#onContentPointerMove),
-      on(content, 'pointerup', this.#onContentPointerUp),
-      on(content, 'pointerout', this.#onContentPointerOut),
-      on(content, 'contextmenu', () => this.#lastPointerEvent && this.#endPointer(this.#lastPointerEvent)),
-      on(content, 'pointercancel', () => this.#endPointer(null)),
+      () => gesture.destroy(),
+      overlay && on(overlay, 'pointerup', (e) => gesture.release(e)),
       on(content, 'click', this.#onContentClick),
       on(content, 'focusin', (e) => {
         if (e.target instanceof HTMLElement && e.target !== content) this.#lastFocusedInside = e.target;
       }),
-      overlay && on(overlay, 'pointerup', (e) => this.#release(e)),
       handle && on(handle, 'click', this.#onHandleClick),
       handle && on(handle, 'pointercancel', this.#cancelHandleInteraction),
       handle &&
-        on(handle, 'pointerdown', (e) => {
-          if (this.#o.handleOnly) this.#press(e);
+        on(handle, 'pointerdown', () => {
           this.#handleCloseTimer = window.setTimeout(() => (this.#cancelHandleTap = true), LONG_HANDLE_PRESS_TIMEOUT);
         }),
-      handle && on(handle, 'pointermove', (e) => this.#o.handleOnly && this.#drag(e)),
       ...this.triggers.map((t) => on(t, 'click', () => this.toggle('trigger'))),
       on(window, 'resize', this.#onResize),
       () => clearTimeout(this.#handleCloseTimer),
@@ -744,83 +743,27 @@ export class Sheet {
   #onResize = () => {
     this.#computeSnapOffsets();
     this.#syncSnapState();
-    if (this.#state.open && !this.#closing && !this.#pressed && this.#hasSnapPoints) this.#settle(true);
+    if (this.#state.open && !this.#closing && !this.#gesture.pressed && this.#hasSnapPoints) this.#settle(true);
   };
 
   // ───────────────────────────── pointer handling ─────────────────────────────
 
-  #onContentPointerDown = (e: PointerEvent) => {
-    if (this.#o.handleOnly) return;
-    // No-drag areas behave like regular content (text selection, native gestures).
-    if (e.target instanceof Element && e.target.closest('[data-zupf-no-drag]')) return;
-    this.#pointerStartXY = { x: e.pageX, y: e.pageY };
-    this.#press(e);
-  };
-
-  #onContentPointerMove = (e: PointerEvent) => {
-    this.#lastPointerEvent = e;
-    if (this.#o.handleOnly || !this.#pointerStartXY) return;
-    const delta = { x: e.pageX - this.#pointerStartXY.x, y: e.pageY - this.#pointerStartXY.y };
-    const threshold = e.pointerType === 'touch' ? 10 : 2;
-    if (this.#isDeltaInDirection(delta, threshold)) this.#drag(e);
-    else if (Math.abs(delta.x) > threshold || Math.abs(delta.y) > threshold) this.#pointerStartXY = null;
-  };
-
-  #onContentPointerUp = (e: PointerEvent) => this.#endPointer(e);
-
-  /** Treat the pointer leaving the sheet (without capture) as a release. */
-  #onContentPointerOut = (e: PointerEvent) => {
-    if (this.#captureEl?.hasPointerCapture?.(e.pointerId)) return;
-    if (e.relatedTarget instanceof Node && this.content.contains(e.relatedTarget)) return;
-    this.#endPointer(this.#lastPointerEvent);
-  };
-
-  #endPointer(e: PointerEvent | null) {
-    this.#pointerStartXY = null;
-    this.#wasBeyondThePoint = false;
-    this.#release(e);
-  }
-
-  /** Only start dragging when the gesture goes along the sheet axis. */
-  #isDeltaInDirection(delta: { x: number; y: number }, threshold: number) {
-    if (this.#wasBeyondThePoint) return true;
-    const dx = Math.abs(delta.x);
-    const dy = Math.abs(delta.y);
-    const isDeltaX = dx > dy;
-    const sign = directionSign(this.#o.direction);
-    if (isVertical(this.#o.direction)) {
-      if (!(delta.y * sign < 0) && dy <= threshold) return !isDeltaX;
-    } else if (!(delta.x * sign < 0) && dx <= threshold) {
-      return isDeltaX;
-    }
-    this.#wasBeyondThePoint = true;
-    return true;
-  }
-
-  #press(e: PointerEvent) {
+  #canStartDrag = (e: PointerEvent & { target: Element }): boolean => {
     const o = this.#o;
-    if (!this.#state.open || this.#closing) return;
-    if (!o.dismissible && !this.#hasSnapPoints) return;
-    const target = e.target;
-    if (!(target instanceof Element) || !this.content.contains(target)) return;
+    // No-drag areas behave like regular content (text selection, native gestures).
+    if (!o.handleOnly && e.target.closest('[data-zupf-no-drag]')) return false;
+    if (!this.#state.open || this.#closing) return false;
+    return o.dismissible || this.#hasSnapPoints;
+  };
 
+  #onDragStart = () => {
     const rect = this.content.getBoundingClientRect();
-    this.#sheetSize = isVertical(o.direction) ? rect.height : rect.width;
-    this.#pressed = true;
+    this.#sheetSize = isVertical(this.#o.direction) ? rect.height : rect.width;
     this.#draggedThisPress = false;
     this.#updatePreventScroll();
-    this.#dragStartTime = Date.now();
-
     // iOS doesn't fire pointerup after a native scroll; reset on touchend.
     if (isIOS()) window.addEventListener('touchend', () => (this.#allowedToDrag = false), { once: true });
-    try {
-      this.#captureEl = target;
-      target.setPointerCapture(e.pointerId);
-    } catch {
-      /* element may not support capture */
-    }
-    this.#pointerStart = isVertical(o.direction) ? e.pageY : e.pageX;
-  }
+  };
 
   #shouldDrag(el: Element, towardsOpen: boolean): boolean {
     const o = this.#o;
@@ -848,24 +791,17 @@ export class Sheet {
     }
 
     // Don't drag if any scrollable ancestor (up to the sheet) is scrolled away from the top.
-    let node: Element | null = el;
-    while (node) {
-      if (node.scrollHeight > node.clientHeight && node.scrollTop !== 0) {
-        this.#lastTimeDragPrevented = Date.now();
-        return false;
-      }
-      if (node === this.content) break;
-      node = node.parentElement;
+    if (isScrolledAway(el, this.content)) {
+      this.#lastTimeDragPrevented = Date.now();
+      return false;
     }
     return true;
   }
 
-  #drag(e: PointerEvent) {
-    if (!this.#pressed) return;
+  #drag(e: PointerEvent, draggedDistance: number) {
     const o = this.#o;
     const { content, overlay, wrapper } = this;
     const sign = directionSign(o.direction);
-    const draggedDistance = (this.#pointerStart - (isVertical(o.direction) ? e.pageY : e.pageX)) * sign;
     const towardsOpen = draggedDistance > 0;
     const snap = this.#hasSnapPoints;
     const activeIndex = this.#state.activeSnapPointIndex;
@@ -934,21 +870,20 @@ export class Sheet {
   }
 
   #cancelDrag() {
-    if (!this.#pressed) return;
+    if (!this.#gesture.pressed) return;
+    this.#gesture.cancel();
+    this.#stopDragging();
+  }
+
+  #stopDragging() {
     this.content.removeAttribute('data-dragging');
     this.#allowedToDrag = false;
-    this.#pressed = false;
     this.#emit({ dragging: false });
     this.#updatePreventScroll();
   }
 
-  #release(e: PointerEvent | null) {
-    if (!this.#pressed) return;
+  #release(e: PointerEvent | null, { distance: draggedDistance, velocity }: DragEnd) {
     const o = this.#o;
-    const timeTaken = Math.max(Date.now() - this.#dragStartTime, 1);
-    const distMoved = e ? this.#pointerStart - (isVertical(o.direction) ? e.pageY : e.pageX) : 0;
-    const velocity = Math.abs(distMoved) / timeTaken;
-    const draggedDistance = distMoved * directionSign(o.direction);
 
     if (velocity > 0.05) {
       // Prevent focusing an input right after a flick (keeps iOS scroll prevention off briefly).
@@ -958,7 +893,7 @@ export class Sheet {
         this.#updatePreventScroll();
       }, 200);
     }
-    this.#cancelDrag();
+    this.#stopDragging();
 
     const swipeAmount = getTranslate(this.content, o.direction);
     if (
@@ -1195,7 +1130,12 @@ export class Sheet {
   #updatePreventScroll() {
     const o = this.#o;
     const enabled =
-      this.#state.open && !this.#pressed && o.modal && !this.#justReleased && this.#hasBeenOpened && o.repositionInputs;
+      this.#state.open &&
+      !this.#gesture.pressed &&
+      o.modal &&
+      !this.#justReleased &&
+      this.#hasBeenOpened &&
+      o.repositionInputs;
     if (enabled && !this.#releasePreventScroll) this.#releasePreventScroll = preventScroll();
     else if (!enabled && this.#releasePreventScroll) {
       this.#releasePreventScroll();

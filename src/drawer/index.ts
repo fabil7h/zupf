@@ -9,4 +9,4 @@ export type {
 } from './sheet';
 export type { Direction, SnapPoint, ChangeReason } from './types';
 export { getSnapOffsets, resolveRelease, resolveSnapRelease, snapFadeProgress, overlayOpacityAt } from './physics';
-export { dampen as rubberband } from '../shared';
+export { dampen as rubberband } from '../core';

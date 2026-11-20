@@ -1,4 +1,4 @@
-export type { Direction } from '../shared';
+export type { Direction } from '../core';
 
 /** Fraction of the container (`0.5`) or a fixed size in px (`'320px'`). */
 export type SnapPoint = number | string;

@@ -1,4 +1,4 @@
-import { chain, isInput, isIOS, on, type Cleanup } from '../shared';
+import { chain, isInput, isIOS, on, type Cleanup } from '../core';
 
 const KEYBOARD_BUFFER = 24;
 

@@ -2,7 +2,7 @@
  * Pure drag/snap math with no DOM access, so it is unit-testable and reusable.
  */
 import type { Direction, SnapPoint } from './types';
-import { directionSign, isVertical } from '../shared';
+import { directionSign, isVertical } from '../core';
 
 export interface Size {
   width: number;
