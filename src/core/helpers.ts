@@ -109,3 +109,19 @@ export function resolveElement<T extends Element = HTMLElement>(
   if (!value) return null;
   return typeof value === 'string' ? root.querySelector<T>(value) : value;
 }
+
+export function isScrollable(node: Element): boolean {
+  const style = window.getComputedStyle(node);
+  return /(auto|scroll)/.test(style.overflow + style.overflowX + style.overflowY);
+}
+
+/** Nearest scrollable ancestor of `node` (or `node` itself with `includeSelf`); the document scroller if none. */
+export function getScrollParent(node: Element, includeSelf = false): Element {
+  let current: Element | null = includeSelf ? node : node.parentElement;
+  while (current && !isScrollable(current)) current = current.parentElement;
+  return current || document.scrollingElement || document.documentElement;
+}
+
+export function stripUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+}

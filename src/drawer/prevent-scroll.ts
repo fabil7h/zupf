@@ -1,17 +1,6 @@
-import { chain, isInput, isIOS, on, type Cleanup } from '../core';
+import { chain, getScrollParent, isInput, isIOS, on, type Cleanup } from '../core';
 
 const KEYBOARD_BUFFER = 24;
-
-function isScrollable(node: Element): boolean {
-  const style = window.getComputedStyle(node);
-  return /(auto|scroll)/.test(style.overflow + style.overflowX + style.overflowY);
-}
-
-function getScrollParent(node: Element): Element {
-  if (isScrollable(node)) node = node.parentElement as Element;
-  while (node && !isScrollable(node)) node = node.parentElement as Element;
-  return node || document.scrollingElement || document.documentElement;
-}
 
 let count = 0;
 let restore: Cleanup | undefined;

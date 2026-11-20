@@ -15,6 +15,7 @@ import {
   noop,
   on,
   resolveElement,
+  stripUndefined,
   translate,
   uid,
   type Cleanup,
@@ -1180,10 +1181,6 @@ export class Sheet {
 
     content.style.bottom = this.#hasSnapPoints && !this.#keyboardOpen ? '0px' : `${Math.max(diffFromInitial, 0)}px`;
   };
-}
-
-function stripUndefined<T extends object>(obj: T): Partial<T> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
 export function createSheet(options: SheetOptions): Sheet {
