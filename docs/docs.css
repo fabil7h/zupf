@@ -1,3 +1,5 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
 @import '../src/drawer/style.css';
 @import '../src/pull-to-refresh/style.css';
 
@@ -64,11 +66,16 @@
   --t-f: light-dark(#4078f2, #61afef);
   --t-p: light-dark(#e45649, #e06c75);
 
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:
+    'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+
   --zupf-bg: light-dark(#fff, var(--zinc-900));
   --zupf-color: var(--fg);
   --zupf-handle-color: light-dark(var(--zinc-300), var(--zinc-700));
 
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -97,7 +104,7 @@ a {
 }
 
 code {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.85em;
   padding: 0.1em 0.35em;
   border-radius: calc(5px * var(--radius-scale));
