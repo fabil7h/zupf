@@ -30,6 +30,7 @@ function useGestures(
       unsubscribe();
       instance.destroy();
     };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once on mount; demos recreate via `key`
   }, []);
   return { gestures, state };
 }
@@ -536,21 +537,23 @@ function FlowPad({ pattern }: { pattern: string }) {
 
   const doneCount = state.pressed ? state.steps.length - 1 : state.steps.length;
   const current = state.pressed ? state.steps.at(-1) : undefined;
+  const stepState = (i: number) => {
+    if (i < doneCount || unlocked) return 'done';
+    return i === doneCount && state.pressed ? 'active' : 'todo';
+  };
+  let hint = 'Perform the steps in order';
+  if (unlocked) hint = 'Unlocked';
+  else if (current?.length) hint = `now: ${current.join(' + ')}`;
   return (
     <div ref={pad} class="gesture-pad" data-unlocked={unlocked > 0 || undefined}>
       <ol key={failed} class="gesture-flow" data-failed={failed > 0 || undefined} aria-label="Progress">
         {steps.map((step, i) => (
-          <li
-            key={i}
-            data-state={i < doneCount || unlocked ? 'done' : i === doneCount && state.pressed ? 'active' : 'todo'}
-          >
+          <li key={i} data-state={stepState(i)}>
             {step.join(' + ')}
           </li>
         ))}
       </ol>
-      <span class="gesture-hint">
-        {unlocked ? 'Unlocked' : current?.length ? `now: ${current.join(' + ')}` : 'Perform the steps in order'}
-      </span>
+      <span class="gesture-hint">{hint}</span>
       <div class="hold-bar" />
     </div>
   );

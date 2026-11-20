@@ -74,7 +74,7 @@ export default defineConfig({
       'typescript/no-misused-promises': 'error',
 
       // Code smells.
-      complexity: ['warn', { max: 15 }],
+      complexity: ['warn', { max: 20 }],
       'max-depth': ['warn', { max: 4 }],
       'max-params': ['warn', { max: 4 }],
       'max-nested-callbacks': ['warn', { max: 4 }],
@@ -90,9 +90,16 @@ export default defineConfig({
       // Docs use Preact's automatic JSX runtime and `class`, not React.
       'react/react-in-jsx-scope': 'off',
       'react/no-unknown-property': 'off',
-      // Docs effects intentionally run once on mount and mutate refs; surface, don't block.
+      // Mount-once effects are common in docs; intentional ones carry an inline disable with a reason.
       'react-hooks/exhaustive-deps': 'warn',
-      'react/immutability': 'warn',
+      // React Compiler rules: Preact has no compiler, and mutating `useRef` values is the intended use.
+      'react/immutability': 'off',
+      // Preact accepts string `style`.
+      'react/style-prop-object': 'off',
+      // Rendered lists are static (split strings, fixed bars/steps): index keys are stable.
+      'react/no-array-index-key': 'off',
+      // `.then` callbacks here only run side effects (setState); a return value adds nothing.
+      'promise/always-return': 'off',
 
       // DOM code narrows event targets and query results constantly; guards are used where it matters.
       'typescript/no-unsafe-type-assertion': 'off',
@@ -111,6 +118,21 @@ export default defineConfig({
           'docs/components/Example.tsx',
         ],
         rules: { 'react/no-danger': 'off' },
+      },
+      {
+        // `describe` blocks are long by nature.
+        files: ['test/**'],
+        rules: { 'max-lines-per-function': 'off' },
+      },
+      {
+        // Signatures dictated by external APIs (browser-command protocol).
+        files: ['**/*.d.ts', 'vite.config.ts'],
+        rules: { 'max-params': 'off' },
+      },
+      {
+        // Build script: console output is the point.
+        files: ['docs/prerender.mjs'],
+        rules: { 'no-console': 'off' },
       },
     ],
   },

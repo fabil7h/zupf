@@ -332,9 +332,9 @@ export class Sheet {
   snapToIndex = (index: number): void => {
     const points = this.#o.snapPoints;
     if (this.#destroyed || !points?.length) return;
-    index = Math.min(Math.max(index, 0), points.length - 1);
-    if (this.#state.open) this.#snapTo(index);
-    else this.#setActiveIndex(index);
+    const clamped = Math.min(Math.max(index, 0), points.length - 1);
+    if (this.#state.open) this.#snapTo(clamped);
+    else this.#setActiveIndex(clamped);
   };
 
   /** Update behavior/callback options at runtime. */

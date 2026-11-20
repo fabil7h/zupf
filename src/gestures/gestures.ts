@@ -254,7 +254,9 @@ export class Gestures {
     if (Math.hypot(x - this.#start.x, y - this.#start.y) > this.#o.slop) this.#startMoving();
     const dx = x - this.#anchor.x;
     const dy = y - this.#anchor.y;
-    const dir: SwipeDirection = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+    let dir: SwipeDirection;
+    if (Math.abs(dx) > Math.abs(dy)) dir = dx > 0 ? 'right' : 'left';
+    else dir = dy > 0 ? 'down' : 'up';
     const lastToken = current.at(-1);
     if (lastToken === `swipe-${dir}`) {
       // Still going the same way: follow along, so a turn is measured from where it happens.
@@ -458,8 +460,13 @@ export class Gestures {
     const multi = patterns.some((p) => p.length > 1);
     const hold = patterns.some((p) => p.some((step) => step.includes('hold')));
     this.#usesHold = hold;
+    let touchAction = '';
+    if (x && y) touchAction = 'none';
+    else if (y) touchAction = 'pan-x pinch-zoom';
+    else if (x) touchAction = 'pan-y pinch-zoom';
+    else if (multi) touchAction = 'manipulation';
     const styles: Record<string, string> = {
-      'touch-action': x && y ? 'none' : y ? 'pan-x pinch-zoom' : x ? 'pan-y pinch-zoom' : multi ? 'manipulation' : '',
+      'touch-action': touchAction,
       '-webkit-touch-callout': hold ? 'none' : '',
       '-webkit-user-select': hold ? 'none' : '',
       'user-select': hold ? 'none' : '',

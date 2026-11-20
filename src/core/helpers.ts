@@ -24,7 +24,7 @@ export function css(el: HTMLElement | null | undefined, styles: Record<string, s
   if (!el) return;
   for (const [key, value] of Object.entries(styles)) {
     if (key.startsWith('--') || key.includes('-')) el.style.setProperty(key, value);
-    else (el.style as any)[key] = value;
+    else (el.style as unknown as Record<string, string>)[key] = value;
   }
 }
 
@@ -70,10 +70,15 @@ export function on<K extends keyof HTMLElementEventMap>(
 export function on(
   target: EventTarget,
   type: string,
-  fn: (e: any) => void,
+  fn: (e: Event) => void,
   opts?: boolean | AddEventListenerOptions,
 ): Cleanup;
-export function on(target: EventTarget, type: string, fn: (e: any) => void, opts?: boolean | AddEventListenerOptions) {
+export function on(
+  target: EventTarget,
+  type: string,
+  fn: (e: Event) => void,
+  opts?: boolean | AddEventListenerOptions,
+) {
   target.addEventListener(type, fn, opts);
   return () => target.removeEventListener(type, fn, opts);
 }

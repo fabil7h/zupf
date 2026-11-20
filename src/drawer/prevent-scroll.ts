@@ -96,8 +96,9 @@ function onTouchEnd(e: TouchEvent) {
 
 const onWindowScroll = () => window.scrollTo(0, 0);
 
-function scrollIntoView(target: Element) {
+function scrollIntoView(start: Element) {
   const root = document.scrollingElement || document.documentElement;
+  let target = start;
   while (target && target !== root) {
     const scrollable = getScrollParent(target);
     if (scrollable !== document.documentElement && scrollable !== document.body && scrollable !== target) {

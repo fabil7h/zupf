@@ -43,6 +43,7 @@ export function Header() {
 
   // Close the mobile navigation sheet after navigating.
   const { slug } = useDocRoute();
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- only react to navigation, not to the sheet appearing
   useEffect(() => mobileNav?.close(), [slug]);
 
   return (
@@ -158,6 +159,7 @@ export function Toc({ page }: { page: Page }) {
       cancelAnimationFrame(frame);
       window.clearTimeout(syncTimer);
     };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- `examples` derives from `page`, keyed on page.slug below
   }, [page.slug]);
 
   if (examples.length < 2) return null;

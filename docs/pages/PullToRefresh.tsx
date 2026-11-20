@@ -40,6 +40,7 @@ function usePullToRefresh(
       instance.destroy();
     };
     // Options are applied once; demos recreate the instance (via `key`) or call setOptions().
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once on mount; options are inline objects
   }, []);
   return { ptr, status };
 }

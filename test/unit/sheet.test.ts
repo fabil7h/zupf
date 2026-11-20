@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { createSheet, type Sheet } from '../../src';
+import { createSheet, type Sheet, type SheetState } from '../../src';
 
 function mount() {
   document.body.innerHTML = `
@@ -106,7 +106,7 @@ describe('Sheet', () => {
   it('subscribe emits state; snap points are tracked', () => {
     const els = mount();
     sheet = createSheet({ content: els.content, snapPoints: [0.25, 0.5, 1] });
-    const states: any[] = [];
+    const states: SheetState[] = [];
     sheet.subscribe((s) => states.push(s));
     expect(states[0]).toMatchObject({ open: false, activeSnapPoint: 0.25, activeSnapPointIndex: 0 });
 

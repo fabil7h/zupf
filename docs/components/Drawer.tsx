@@ -42,6 +42,7 @@ export function Drawer({ id, options, trigger, nested, noHandle, onReady, childr
     onReady?.(s);
     return () => s.destroy();
     // Options are applied once; use sheet.setOptions() for runtime changes.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once per mount; props are inline objects, recreating would reset the sheet
   }, [mounted, waitingForParent]);
 
   if (!mounted || waitingForParent) return null;
