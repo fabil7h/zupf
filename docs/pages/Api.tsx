@@ -14,9 +14,9 @@ export function Api() {
         rows={[
           ['content', 'required', 'The sheet panel.'],
           ['overlay', '', 'Backdrop element. Only shown when `modal` is on.'],
-          ['handle', '[data-tugsheet-handle]', 'Drag handle. Found automatically inside `content`.'],
+          ['handle', '[data-zupf-handle]', 'Drag handle. Found automatically inside `content`.'],
           ['trigger', '', 'Element (or array of elements) that toggles the sheet when clicked.'],
-          ['wrapper', '[data-tugsheet-wrapper]', 'Page wrapper that `scaleBackground` scales.'],
+          ['wrapper', '[data-zupf-wrapper]', 'Page wrapper that `scaleBackground` scales.'],
           ['container', 'window', 'Element that snap point sizes are measured against.'],
           ['parent', '', 'Parent `Sheet`, for nested sheets.'],
         ]}
@@ -112,22 +112,18 @@ export function Api() {
       <Table
         head={['Attribute', 'Set by', 'Description']}
         rows={[
-          ['data-tugsheet-handle', 'you', 'Drag handle.'],
-          ['data-tugsheet-close', 'you', 'Clicking it closes the sheet.'],
-          ['data-tugsheet-title', 'you', 'Wired to `aria-labelledby`.'],
-          ['data-tugsheet-description', 'you', 'Wired to `aria-describedby`.'],
-          [
-            'data-tugsheet-no-drag',
-            'you',
-            'Dragging never starts from inside this element, and its text can be selected.',
-          ],
-          ['data-tugsheet-wrapper', 'you', 'Element scaled by `scaleBackground`.'],
-          ['data-state', 'tugsheet', '`open | closed` on content, overlay and handle.'],
-          ['data-dragging', 'tugsheet', 'On the content while dragging.'],
-          ['data-handle-only', 'tugsheet', 'On the content when `handleOnly` is on.'],
+          ['data-zupf-handle', 'you', 'Drag handle.'],
+          ['data-zupf-close', 'you', 'Clicking it closes the sheet.'],
+          ['data-zupf-title', 'you', 'Wired to `aria-labelledby`.'],
+          ['data-zupf-description', 'you', 'Wired to `aria-describedby`.'],
+          ['data-zupf-no-drag', 'you', 'Dragging never starts from inside this element, and its text can be selected.'],
+          ['data-zupf-wrapper', 'you', 'Element scaled by `scaleBackground`.'],
+          ['data-state', 'zupf', '`open | closed` on content, overlay and handle.'],
+          ['data-dragging', 'zupf', 'On the content while dragging.'],
+          ['data-handle-only', 'zupf', 'On the content when `handleOnly` is on.'],
           [
             'data-draggable',
-            'tugsheet',
+            'zupf',
             '`false` when the sheet cannot be dragged (non-dismissible, no snap points). The default CSS then hides the handle.',
           ],
         ]}

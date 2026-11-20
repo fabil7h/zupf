@@ -32,7 +32,7 @@ export function Nav() {
 function Logo() {
   return (
     <a href={href('getting-started')} class="logo">
-      tugsheet
+      zupf
     </a>
   );
 }
@@ -70,7 +70,7 @@ export function Header() {
           </button>
         </div>
       </div>
-      {/* Mobile navigation: a left-side tugsheet */}
+      {/* Mobile navigation: a left-side zupf */}
       <Drawer
         id="mobile-nav"
         options={{ direction: 'left', shouldDrag: () => false }}

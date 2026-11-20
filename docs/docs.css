@@ -33,7 +33,7 @@
   }
 
   /* The handle stays a pill. */
-  [data-tugsheet-handle] {
+  [data-zupf-handle] {
     corner-shape: round;
   }
 }
@@ -61,9 +61,9 @@
   --t-f: light-dark(#4078f2, #61afef);
   --t-p: light-dark(#e45649, #e06c75);
 
-  --tugsheet-bg: light-dark(#fff, var(--zinc-900));
-  --tugsheet-color: var(--fg);
-  --tugsheet-handle-color: light-dark(var(--zinc-300), var(--zinc-700));
+  --zupf-bg: light-dark(#fff, var(--zinc-900));
+  --zupf-color: var(--fg);
+  --zupf-handle-color: light-dark(var(--zinc-300), var(--zinc-700));
 
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -197,7 +197,7 @@ pre code {
   border-right: 1px solid var(--border);
 }
 
-.nav-group+.nav-group {
+.nav-group + .nav-group {
   margin-top: 24px;
 }
 
@@ -646,20 +646,20 @@ td:first-child {
   padding: 28px 20px;
 }
 
-.sheet-body> :first-child {
+.sheet-body > :first-child {
   margin-top: 0;
 }
 
-.sheet-body> :last-child {
+.sheet-body > :last-child {
   margin-bottom: 0;
 }
 
 /* A visible handle (12px margin + 5px bar + 12px margin) already spaces the edge it sits on. */
-[data-tugsheet-content][data-direction='bottom']:not([data-draggable='false']):has(> [data-tugsheet-handle]) .sheet-body {
+[data-zupf-content][data-direction='bottom']:not([data-draggable='false']):has(> [data-zupf-handle]) .sheet-body {
   padding-top: 0;
 }
 
-[data-tugsheet-content][data-direction='top']:not([data-draggable='false']):has(> [data-tugsheet-handle]) .sheet-body {
+[data-zupf-content][data-direction='top']:not([data-draggable='false']):has(> [data-zupf-handle]) .sheet-body {
   padding-bottom: 0;
 }
 
@@ -720,7 +720,7 @@ td:first-child {
 /* ── mobile navigation sheet ───────────────────────────── */
 
 #mobile-nav-sheet {
-  --tugsheet-size: 280px;
+  --zupf-size: 280px;
   padding: 16px 20px;
   overflow-y: auto;
 }

@@ -1,9 +1,9 @@
-# tugsheet
+# zupf
 
 A framework-agnostic, customizable drawer / bottom sheet. Ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
 
 - Zero dependencies, about 9 KB gzipped
-- Works with plain HTML, React, Vue, Svelte, Solid, Lit and others: you render the markup, tugsheet adds the behavior
+- Works with plain HTML, React, Vue, Svelte, Solid, Lit and others: you render the markup, zupf adds the behavior
 - Snap points, four directions, nested sheets, scaled background, non-modal mode, handle-only dragging
 - Built-in accessibility: `role="dialog"`, focus trap, focus restore, Esc, outside press, `inert` background, scroll lock
 - Includes vaul's iOS Safari fixes: keyboard repositioning, `position: fixed` body, and blocking scroll on touch
@@ -12,26 +12,26 @@ A framework-agnostic, customizable drawer / bottom sheet. Ported from [vaul](htt
 ## Install
 
 ```sh
-npm i tugsheet
+npm i zupf
 ```
 
 ```js
-import { createSheet } from 'tugsheet';
-import 'tugsheet/style.css'; // optional defaults
+import { createSheet } from 'zupf';
+import 'zupf/style.css'; // optional defaults
 ```
 
 ## Usage
 
 ```html
-<div data-tugsheet-wrapper><!-- your app (only needed for scaleBackground) --></div>
+<div data-zupf-wrapper><!-- your app (only needed for scaleBackground) --></div>
 
 <button id="open">Open</button>
 <div id="overlay"></div>
 <div id="sheet" hidden>
-  <div data-tugsheet-handle></div>
-  <h2 data-tugsheet-title>Title</h2>
-  <p data-tugsheet-description>Description</p>
-  <button data-tugsheet-close>Close</button>
+  <div data-zupf-handle></div>
+  <h2 data-zupf-title>Title</h2>
+  <p data-zupf-description>Description</p>
+  <button data-zupf-close>Close</button>
 </div>
 ```
 
@@ -50,19 +50,19 @@ sheet.close();
 sheet.destroy();
 ```
 
-Put the sheet markup outside the `[data-tugsheet-wrapper]` element. A good place is near the end of `<body>`.
+Put the sheet markup outside the `[data-zupf-wrapper]` element. A good place is near the end of `<body>`.
 
 ## Markup hooks
 
-| Attribute                              | Purpose                                                                                   |
-| -------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `data-tugsheet-handle`                 | Drag handle, found automatically inside `content`. Tapping it cycles through snap points. |
-| `data-tugsheet-close`                  | Clicking it closes the sheet.                                                             |
-| `data-tugsheet-title` / `-description` | Wired to `aria-labelledby` / `aria-describedby` automatically.                            |
-| `data-tugsheet-no-drag`                | Dragging never starts from inside this element, and its text can be selected.             |
-| `data-tugsheet-wrapper`                | Element that `scaleBackground` scales.                                                    |
+| Attribute                          | Purpose                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `data-zupf-handle`                 | Drag handle, found automatically inside `content`. Tapping it cycles through snap points. |
+| `data-zupf-close`                  | Clicking it closes the sheet.                                                             |
+| `data-zupf-title` / `-description` | Wired to `aria-labelledby` / `aria-describedby` automatically.                            |
+| `data-zupf-no-drag`                | Dragging never starts from inside this element, and its text can be selected.             |
+| `data-zupf-wrapper`                | Element that `scaleBackground` scales.                                                    |
 
-tugsheet sets these attributes, which you can use in your CSS:
+zupf sets these attributes, which you can use in your CSS:
 
 - `data-state="open|closed"` on content, overlay and handle
 - `data-direction` and `data-snap-points` on content
@@ -126,17 +126,17 @@ Callbacks:
 
 ```css
 :root {
-  --tugsheet-bg: #fff;
-  --tugsheet-color: inherit;
-  --tugsheet-radius: 12px; /* 20px where squircles are supported */
-  --tugsheet-corner-shape: squircle; /* Chromium 139+; e.g. round, superellipse(3) */
-  --tugsheet-size: 96%; /* max-height (top/bottom) or width (left/right) */
-  --tugsheet-overlay-bg: rgb(0 0 0 / 0.4);
-  --tugsheet-handle-color: #d4d4d8;
-  --tugsheet-handle-width: 32px;
-  --tugsheet-handle-height: 5px;
-  --tugsheet-shadow: none;
-  --tugsheet-z: 50;
+  --zupf-bg: #fff;
+  --zupf-color: inherit;
+  --zupf-radius: 12px; /* 20px where squircles are supported */
+  --zupf-corner-shape: squircle; /* Chromium 139+; e.g. round, superellipse(3) */
+  --zupf-size: 96%; /* max-height (top/bottom) or width (left/right) */
+  --zupf-overlay-bg: rgb(0 0 0 / 0.4);
+  --zupf-handle-color: #d4d4d8;
+  --zupf-handle-width: 32px;
+  --zupf-handle-height: 5px;
+  --zupf-shadow: none;
+  --zupf-z: 50;
 }
 ```
 
@@ -144,7 +144,7 @@ Your own selectors override the defaults no matter how specific they are. You ca
 
 ## Framework recipes
 
-Render the elements on every render; don't put them behind a condition. tugsheet shows and hides them with the `hidden` attribute.
+Render the elements on every render; don't put them behind a condition. zupf shows and hides them with the `hidden` attribute.
 
 ### React
 
@@ -169,7 +169,7 @@ function Drawer({ children }) {
         <>
           <div ref={overlay} />
           <div ref={content} hidden>
-            <div data-tugsheet-handle />
+            <div data-zupf-handle />
             {children}
           </div>
         </>,
@@ -195,7 +195,7 @@ onBeforeUnmount(() => sheet.destroy());
   <Teleport to="body">
     <div ref="overlay" />
     <div ref="content" hidden>
-      <div data-tugsheet-handle />
+      <div data-zupf-handle />
       <slot />
     </div>
   </Teleport>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => sheet.destroy());
 </script>
 <button on:click={() => sheet.open()}>Open</button>
 <div bind:this={overlay} />
-<div bind:this={content} hidden><div data-tugsheet-handle /><slot /></div>
+<div bind:this={content} hidden><div data-zupf-handle /><slot /></div>
 <!-- `$sheet` works too: a sheet is a valid Svelte store -->
 ```
 
@@ -223,7 +223,7 @@ onBeforeUnmount(() => sheet.destroy());
 
 - There are no components. You call `createSheet()` on your own markup.
 - Radix Dialog is replaced by built-in focus trapping, `inert`, scroll lock and dismiss layers. Nested sheets stack correctly.
-- `data-tugsheet-close` buttons close the sheet even when `dismissible: false`, because they are an explicit user action.
+- `data-zupf-close` buttons close the sheet even when `dismissible: false`, because they are an explicit user action.
 - Opening, closing and snapping all use transitions, with no CSS keyframes. Reopening a sheet while it is still closing continues smoothly from its current position.
 - Animation timing, physics thresholds, the rubberband curve, scale-background values and the nested displacement are all options.
 - Tapping the handle after dragging it no longer cycles snap points by accident.

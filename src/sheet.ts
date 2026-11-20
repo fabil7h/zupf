@@ -124,11 +124,11 @@ export interface SheetOptions extends Partial<SheetBehavior>, SheetCallbacks {
   content: HTMLElement | string;
   /** Backdrop. Element or selector. Only shown when `modal`. */
   overlay?: ElementRef;
-  /** Drag handle. @default content.querySelector('[data-tugsheet-handle]') */
+  /** Drag handle. @default content.querySelector('[data-zupf-handle]') */
   handle?: ElementRef;
   /** Elements that toggle the sheet on click. */
   trigger?: ElementRef | HTMLElement[];
-  /** Page wrapper scaled by `scaleBackground`. @default '[data-tugsheet-wrapper]' */
+  /** Page wrapper scaled by `scaleBackground`. @default '[data-zupf-wrapper]' */
   wrapper?: ElementRef;
   /** Custom container to size snap points against (instead of the window). */
   container?: HTMLElement | null;
@@ -247,15 +247,13 @@ export class Sheet {
 
   constructor(options: SheetOptions) {
     const content = resolveElement(options.content);
-    if (!content) throw new Error('[tugsheet] `content` element not found');
+    if (!content) throw new Error('[zupf] `content` element not found');
     this.content = content;
     this.#layer = { content };
     this.overlay = resolveElement(options.overlay);
     this.handle =
-      options.handle === null
-        ? null
-        : (resolveElement(options.handle) ?? content.querySelector('[data-tugsheet-handle]'));
-    this.wrapper = options.wrapper === null ? null : resolveElement(options.wrapper ?? '[data-tugsheet-wrapper]');
+      options.handle === null ? null : (resolveElement(options.handle) ?? content.querySelector('[data-zupf-handle]'));
+    this.wrapper = options.wrapper === null ? null : resolveElement(options.wrapper ?? '[data-zupf-wrapper]');
     this.container = options.container ?? null;
     this.parent = options.parent ?? null;
     this.triggers = (Array.isArray(options.trigger) ? options.trigger : [resolveElement(options.trigger)]).filter(
@@ -377,7 +375,7 @@ export class Sheet {
   #setupDom() {
     const { content, overlay, handle } = this;
     const o = this.#o;
-    content.setAttribute('data-tugsheet-content', '');
+    content.setAttribute('data-zupf-content', '');
     content.setAttribute('data-direction', o.direction);
     content.setAttribute('data-snap-points', String(!!o.snapPoints?.length));
     content.setAttribute('data-custom-container', String(!!this.container));
@@ -385,32 +383,32 @@ export class Sheet {
     content.toggleAttribute('data-handle-only', o.handleOnly);
     // A non-dismissible sheet without snap points can't be dragged at all (the default CSS hides the handle).
     content.setAttribute('data-draggable', String(o.dismissible || !!o.snapPoints?.length));
-    if (!content.id) content.id = uid('tugsheet');
+    if (!content.id) content.id = uid('zupf');
     if (!content.hasAttribute('role')) content.setAttribute('role', 'dialog');
     if (!content.hasAttribute('tabindex')) content.tabIndex = -1;
     if (o.modal) content.setAttribute('aria-modal', 'true');
     else content.removeAttribute('aria-modal');
-    css(content, { '--tugsheet-duration': `${o.duration}ms`, '--tugsheet-easing': o.easing });
+    css(content, { '--zupf-duration': `${o.duration}ms`, '--zupf-easing': o.easing });
 
     for (const [attr, selector] of [
-      ['aria-labelledby', '[data-tugsheet-title]'],
-      ['aria-describedby', '[data-tugsheet-description]'],
+      ['aria-labelledby', '[data-zupf-title]'],
+      ['aria-describedby', '[data-zupf-description]'],
     ] as const) {
       const el = content.querySelector(selector);
       if (el && !content.hasAttribute(attr)) {
-        if (!el.id) el.id = uid('tugsheet-label');
+        if (!el.id) el.id = uid('zupf-label');
         content.setAttribute(attr, el.id);
       }
     }
 
     if (overlay) {
-      overlay.setAttribute('data-tugsheet-overlay', '');
+      overlay.setAttribute('data-zupf-overlay', '');
       overlay.setAttribute('aria-hidden', 'true');
       overlay.setAttribute('data-custom-container', String(!!this.container));
-      css(overlay, { '--tugsheet-duration': `${o.duration}ms`, '--tugsheet-easing': o.easing });
+      css(overlay, { '--zupf-duration': `${o.duration}ms`, '--zupf-easing': o.easing });
     }
     if (handle) {
-      handle.setAttribute('data-tugsheet-handle', '');
+      handle.setAttribute('data-zupf-handle', '');
       handle.setAttribute('aria-hidden', 'true');
     }
     for (const t of this.triggers) {
@@ -437,10 +435,10 @@ export class Sheet {
       handle && on(handle, 'click', this.#onHandleClick),
       handle && on(handle, 'pointercancel', this.#cancelHandleInteraction),
       handle &&
-      on(handle, 'pointerdown', (e) => {
-        if (this.#o.handleOnly) this.#press(e);
-        this.#handleCloseTimer = window.setTimeout(() => (this.#cancelHandleTap = true), LONG_HANDLE_PRESS_TIMEOUT);
-      }),
+        on(handle, 'pointerdown', (e) => {
+          if (this.#o.handleOnly) this.#press(e);
+          this.#handleCloseTimer = window.setTimeout(() => (this.#cancelHandleTap = true), LONG_HANDLE_PRESS_TIMEOUT);
+        }),
       handle && on(handle, 'pointermove', (e) => this.#o.handleOnly && this.#drag(e)),
       ...this.triggers.map((t) => on(t, 'click', () => this.toggle('trigger'))),
       on(window, 'resize', this.#onResize),
@@ -650,8 +648,8 @@ export class Sheet {
   };
 
   #onContentClick = (e: MouseEvent) => {
-    const close = e.target instanceof Element ? e.target.closest('[data-tugsheet-close]') : null;
-    if (close && close.closest('[data-tugsheet-content]') === this.content) this.close('close-button');
+    const close = e.target instanceof Element ? e.target.closest('[data-zupf-close]') : null;
+    if (close && close.closest('[data-zupf-content]') === this.content) this.close('close-button');
   };
 
   // ───────────────────────────── positioning / snap points ─────────────────────────────
@@ -753,7 +751,7 @@ export class Sheet {
   #onContentPointerDown = (e: PointerEvent) => {
     if (this.#o.handleOnly) return;
     // No-drag areas behave like regular content (text selection, native gestures).
-    if (e.target instanceof Element && e.target.closest('[data-tugsheet-no-drag]')) return;
+    if (e.target instanceof Element && e.target.closest('[data-zupf-no-drag]')) return;
     this.#pointerStartXY = { x: e.pageX, y: e.pageY };
     this.#press(e);
   };
@@ -832,7 +830,7 @@ export class Sheet {
     const now = Date.now();
 
     if (el.tagName === 'SELECT') return false;
-    if (el.closest?.('[data-tugsheet-no-drag]')) return false;
+    if (el.closest?.('[data-zupf-no-drag]')) return false;
     if (!isVertical(o.direction)) return true;
     // Allow scrolling right after opening / reaching the last snap point.
     if (now - this.#openTime < 500) return false;
@@ -879,13 +877,13 @@ export class Sheet {
     const snapProgress =
       snap && activeIndex != null
         ? snapFadeProgress({
-          offsets: this.#snapOffsets,
-          activeIndex,
-          fadeFromIndex: this.#fadeFromIndex,
-          absDraggedDistance: absDragged,
-          towardsOpen,
-          closedOffset: this.#closedOffset(),
-        })
+            offsets: this.#snapOffsets,
+            activeIndex,
+            fadeFromIndex: this.#fadeFromIndex,
+            absDraggedDistance: absDragged,
+            towardsOpen,
+            closedOffset: this.#closedOffset(),
+          })
         : null;
     if (snapProgress !== null) progress = snapProgress;
     if (blockClose && progress >= 1) return;

@@ -1,130 +1,130 @@
 /*
- * tugsheet default styles.
+ * zupf default styles.
  * Every selector is wrapped in :where() (zero specificity), so any of your own rules win.
  * Theme through custom properties, e.g.
- *   :root { --tugsheet-bg: #111; --tugsheet-radius: 20px; }
+ *   :root { --zupf-bg: #111; --zupf-radius: 20px; }
  * or per sheet:
- *   #my-sheet { --tugsheet-size: 60dvh; }
+ *   #my-sheet { --zupf-size: 60dvh; }
  */
 
-:where([data-tugsheet-overlay]) {
+:where([data-zupf-overlay]) {
   position: fixed;
   inset: 0;
-  z-index: var(--tugsheet-z, 50);
-  background: var(--tugsheet-overlay-bg, rgb(0 0 0 / 0.4));
+  z-index: var(--zupf-z, 50);
+  background: var(--zupf-overlay-bg, rgb(0 0 0 / 0.4));
   -webkit-tap-highlight-color: transparent;
 }
 
-:where([data-tugsheet-content]) {
+:where([data-zupf-content]) {
   position: fixed;
-  z-index: var(--tugsheet-z, 50);
+  z-index: var(--zupf-z, 50);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  background: var(--tugsheet-bg, #fff);
-  color: var(--tugsheet-color, inherit);
-  box-shadow: var(--tugsheet-shadow, none);
+  background: var(--zupf-bg, #fff);
+  color: var(--zupf-color, inherit);
+  box-shadow: var(--zupf-shadow, none);
   outline: none;
   touch-action: none;
   will-change: transform;
-  --_tugsheet-radius: var(--tugsheet-radius, 12px);
+  --_zupf-radius: var(--zupf-radius, 12px);
 }
 
 /* Squircle corners where supported (Chromium 139+); other browsers keep regular rounded corners.
    A squircle looks less round at the same radius, so the default radius is larger here.
-   Override with --tugsheet-corner-shape (e.g. round, superellipse(3)) and --tugsheet-radius. */
+   Override with --zupf-corner-shape (e.g. round, superellipse(3)) and --zupf-radius. */
 @supports (corner-shape: squircle) {
-  :where([data-tugsheet-content]) {
-    --_tugsheet-radius: var(--tugsheet-radius, 20px);
-    corner-shape: var(--tugsheet-corner-shape, squircle);
+  :where([data-zupf-content]) {
+    --_zupf-radius: var(--zupf-radius, 20px);
+    corner-shape: var(--zupf-corner-shape, squircle);
   }
 }
 
 /* Hidden while closed. !important so `display` from your own CSS doesn't leak a closed sheet. */
-[data-tugsheet-content][hidden],
-[data-tugsheet-overlay][hidden] {
+[data-zupf-content][hidden],
+[data-zupf-overlay][hidden] {
   display: none !important;
 }
 
 /* Inside a custom container, position relative to it instead of the viewport. */
-:where([data-tugsheet-content][data-custom-container='true']),
-:where([data-tugsheet-overlay][data-custom-container='true']) {
+:where([data-zupf-content][data-custom-container='true']),
+:where([data-zupf-overlay][data-custom-container='true']) {
   position: absolute;
 }
 
 /* ── Placement per direction ─────────────────────────────────────────── */
 
-:where([data-tugsheet-content][data-direction='bottom']) {
+:where([data-zupf-content][data-direction='bottom']) {
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: var(--tugsheet-size, 96%);
-  border-radius: var(--_tugsheet-radius) var(--_tugsheet-radius) 0 0;
+  max-height: var(--zupf-size, 96%);
+  border-radius: var(--_zupf-radius) var(--_zupf-radius) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-:where([data-tugsheet-content][data-direction='top']) {
+:where([data-zupf-content][data-direction='top']) {
   left: 0;
   right: 0;
   top: 0;
-  max-height: var(--tugsheet-size, 96%);
-  border-radius: 0 0 var(--_tugsheet-radius) var(--_tugsheet-radius);
+  max-height: var(--zupf-size, 96%);
+  border-radius: 0 0 var(--_zupf-radius) var(--_zupf-radius);
   padding-top: env(safe-area-inset-top);
 }
 
-:where([data-tugsheet-content][data-direction='left']) {
+:where([data-zupf-content][data-direction='left']) {
   top: 0;
   bottom: 0;
   left: 0;
-  width: var(--tugsheet-size, min(400px, 85%));
-  border-radius: 0 var(--_tugsheet-radius) var(--_tugsheet-radius) 0;
+  width: var(--zupf-size, min(400px, 85%));
+  border-radius: 0 var(--_zupf-radius) var(--_zupf-radius) 0;
 }
 
-:where([data-tugsheet-content][data-direction='right']) {
+:where([data-zupf-content][data-direction='right']) {
   top: 0;
   bottom: 0;
   right: 0;
-  width: var(--tugsheet-size, min(400px, 85%));
-  border-radius: var(--_tugsheet-radius) 0 0 var(--_tugsheet-radius);
+  width: var(--zupf-size, min(400px, 85%));
+  border-radius: var(--_zupf-radius) 0 0 var(--_zupf-radius);
 }
 
 /* Snap point sheets span the whole container; snap points translate them into view. */
-:where([data-tugsheet-content][data-snap-points='true'][data-direction='bottom']),
-:where([data-tugsheet-content][data-snap-points='true'][data-direction='top']) {
+:where([data-zupf-content][data-snap-points='true'][data-direction='bottom']),
+:where([data-zupf-content][data-snap-points='true'][data-direction='top']) {
   height: 100%;
   max-height: none;
 }
-:where([data-tugsheet-content][data-snap-points='true'][data-direction='left']),
-:where([data-tugsheet-content][data-snap-points='true'][data-direction='right']) {
+:where([data-zupf-content][data-snap-points='true'][data-direction='left']),
+:where([data-zupf-content][data-snap-points='true'][data-direction='right']) {
   width: 100%;
 }
 
 /* Extends the sheet background past its edge so pulling it "too far" never shows a gap. */
-:where([data-tugsheet-content]:not([data-custom-container='true']))::after {
+:where([data-zupf-content]:not([data-custom-container='true']))::after {
   content: '';
   position: absolute;
   background: inherit;
   pointer-events: none;
 }
-:where([data-tugsheet-content][data-direction='bottom'])::after {
+:where([data-zupf-content][data-direction='bottom'])::after {
   top: 100%;
   left: 0;
   right: 0;
   height: 200%;
 }
-:where([data-tugsheet-content][data-direction='top'])::after {
+:where([data-zupf-content][data-direction='top'])::after {
   bottom: 100%;
   left: 0;
   right: 0;
   height: 200%;
 }
-:where([data-tugsheet-content][data-direction='left'])::after {
+:where([data-zupf-content][data-direction='left'])::after {
   right: 100%;
   top: 0;
   bottom: 0;
   width: 200%;
 }
-:where([data-tugsheet-content][data-direction='right'])::after {
+:where([data-zupf-content][data-direction='right'])::after {
   left: 100%;
   top: 0;
   bottom: 0;
@@ -134,48 +134,48 @@
 /* With a mouse, dragging the sheet would otherwise select text. Handle-only sheets don't drag
    from their content, so they keep normal text selection. */
 @media (hover: hover) and (pointer: fine) {
-  :where([data-tugsheet-content]:not([data-handle-only])) {
+  :where([data-zupf-content]:not([data-handle-only])) {
     user-select: none;
   }
 }
 
 /* Handle-only sheets and no-drag areas behave like regular page content. */
-:where([data-tugsheet-content][data-handle-only]),
-:where([data-tugsheet-content] [data-tugsheet-no-drag]) {
+:where([data-zupf-content][data-handle-only]),
+:where([data-zupf-content] [data-zupf-no-drag]) {
   touch-action: auto;
 }
-:where([data-tugsheet-content] [data-tugsheet-no-drag]) {
+:where([data-zupf-content] [data-zupf-no-drag]) {
   user-select: text;
 }
-:where([data-tugsheet-content][data-handle-only]) :where([data-tugsheet-handle]) {
+:where([data-zupf-content][data-handle-only]) :where([data-zupf-handle]) {
   touch-action: none;
 }
-:where([data-tugsheet-content][data-dragging]) {
+:where([data-zupf-content][data-dragging]) {
   user-select: none;
   cursor: grabbing;
 }
 
 /* ── Handle ──────────────────────────────────────────────────────────── */
 
-:where([data-tugsheet-handle]) {
+:where([data-zupf-handle]) {
   position: relative;
   flex-shrink: 0;
   display: block;
-  width: var(--tugsheet-handle-width, 32px);
-  height: var(--tugsheet-handle-height, 5px);
-  margin: var(--tugsheet-handle-margin, 12px auto);
+  width: var(--zupf-handle-width, 32px);
+  height: var(--zupf-handle-height, 5px);
+  margin: var(--zupf-handle-margin, 12px auto);
   border-radius: 999px;
-  background: var(--tugsheet-handle-color, #d4d4d8);
+  background: var(--zupf-handle-color, #d4d4d8);
   opacity: 0.7;
   cursor: grab;
   touch-action: pan-y;
 }
-:where([data-tugsheet-handle]):hover,
-:where([data-tugsheet-handle]):active {
+:where([data-zupf-handle]):hover,
+:where([data-zupf-handle]):active {
   opacity: 1;
 }
 /* Invisible 44x44 hit area for touch. */
-:where([data-tugsheet-handle])::before {
+:where([data-zupf-handle])::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -184,34 +184,34 @@
   height: max(100%, 2.75rem);
   transform: translate(-50%, -50%);
 }
-:where([data-tugsheet-content][data-direction='left'], [data-tugsheet-content][data-direction='right'])
-  :where([data-tugsheet-handle]) {
-  width: var(--tugsheet-handle-height, 5px);
-  height: var(--tugsheet-handle-width, 32px);
+:where([data-zupf-content][data-direction='left'], [data-zupf-content][data-direction='right'])
+  :where([data-zupf-handle]) {
+  width: var(--zupf-handle-height, 5px);
+  height: var(--zupf-handle-width, 32px);
   margin: auto 12px;
   position: absolute;
   top: 50%;
   translate: 0 -50%;
 }
-:where([data-tugsheet-content][data-direction='left']) :where([data-tugsheet-handle]) {
+:where([data-zupf-content][data-direction='left']) :where([data-zupf-handle]) {
   right: 0;
 }
-:where([data-tugsheet-content][data-direction='right']) :where([data-tugsheet-handle]) {
+:where([data-zupf-content][data-direction='right']) :where([data-zupf-handle]) {
   left: 0;
 }
 
 /* Top sheets: the handle belongs on the bottom edge, wherever it is in the markup. */
-:where([data-tugsheet-content][data-direction='top']) :where([data-tugsheet-handle]) {
+:where([data-zupf-content][data-direction='top']) :where([data-zupf-handle]) {
   order: 1;
 }
 
 /* Nothing to drag: don't show a handle. Must come after the handle rules above. */
-:where([data-tugsheet-content][data-draggable='false']) :where([data-tugsheet-handle]) {
+:where([data-zupf-content][data-draggable='false']) :where([data-zupf-handle]) {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :where([data-tugsheet-content], [data-tugsheet-overlay]) {
+  :where([data-zupf-content], [data-zupf-overlay]) {
     transition-duration: 0.01ms !important;
   }
 }

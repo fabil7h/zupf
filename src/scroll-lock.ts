@@ -13,11 +13,11 @@ export function lockScroll(): Cleanup {
     const prev = { overflow: html.style.overflow, paddingRight: body.style.paddingRight };
     html.style.overflow = 'hidden';
     if (gap > 0) body.style.paddingRight = `calc(${getComputedStyle(body).paddingRight} + ${gap}px)`;
-    html.style.setProperty('--tugsheet-scrollbar-gap', `${gap}px`);
+    html.style.setProperty('--zupf-scrollbar-gap', `${gap}px`);
     restore = () => {
       html.style.overflow = prev.overflow;
       body.style.paddingRight = prev.paddingRight;
-      html.style.removeProperty('--tugsheet-scrollbar-gap');
+      html.style.removeProperty('--zupf-scrollbar-gap');
     };
   }
   let released = false;

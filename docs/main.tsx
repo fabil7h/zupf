@@ -13,7 +13,7 @@ function PageView() {
   const page = pages.find((p) => p.slug === slug) ?? pages[0];
 
   useEffect(() => {
-    document.title = `${page.title} · tugsheet`;
+    document.title = `${page.title} · zupf`;
   }, [page]);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ function PageView() {
 function App() {
   return (
     // Everything inside the wrapper is scaled back by `scaleBackground`; sheets portal to <body>.
-    <div data-tugsheet-wrapper class="app">
+    <div data-zupf-wrapper class="app">
       <Header />
       <div class="layout">
         <nav class="sidebar" aria-label="Documentation">

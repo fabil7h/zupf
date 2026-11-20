@@ -6,10 +6,10 @@ function mount() {
     <div id="app"><button id="trigger">Open</button><input id="outside"></div>
     <div id="overlay"></div>
     <div id="content">
-      <div data-tugsheet-handle></div>
-      <h2 data-tugsheet-title>Title</h2>
-      <p data-tugsheet-description>Desc</p>
-      <button data-tugsheet-close id="close">Close</button>
+      <div data-zupf-handle></div>
+      <h2 data-zupf-title>Title</h2>
+      <p data-zupf-description>Desc</p>
+      <button data-zupf-close id="close">Close</button>
     </div>`;
   return {
     app: document.getElementById('app')!,

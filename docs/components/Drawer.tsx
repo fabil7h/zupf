@@ -1,4 +1,4 @@
-// How you'd wrap tugsheet in Preact (or React, with minor changes): render the markup,
+// How you'd wrap zupf in Preact (or React, with minor changes): render the markup,
 // create the sheet in a layout effect, destroy it on unmount.
 import { createContext, createPortal, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -48,9 +48,9 @@ export function Drawer({ id, options, trigger, nested, noHandle, onReady, childr
       <div ref={overlay} id={`${id}-overlay`} />
       <div ref={content} id={`${id}-sheet`} hidden>
         {/* The handle sits on the edge facing the page: below the content for top sheets. */}
-        {!noHandle && options?.direction !== 'top' && <div data-tugsheet-handle />}
+        {!noHandle && options?.direction !== 'top' && <div data-zupf-handle />}
         {children}
-        {!noHandle && options?.direction === 'top' && <div data-tugsheet-handle />}
+        {!noHandle && options?.direction === 'top' && <div data-zupf-handle />}
       </div>
     </SheetContext.Provider>,
     document.body,

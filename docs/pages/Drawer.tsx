@@ -7,9 +7,7 @@ export function DrawerExamples() {
       {examplePages.map((section) => (
         <section key={section.slug}>
           <h2 id={section.slug}>{section.title}</h2>
-          {section.intro && (
-            <p class="lead" dangerouslySetInnerHTML={{ __html: section.intro }} />
-          )}
+          {section.intro && <p class="lead" dangerouslySetInnerHTML={{ __html: section.intro }} />}
           {(section.examples ?? []).map((example) => (
             <ExampleComponent key={example.id} ex={example} />
           ))}

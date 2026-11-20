@@ -6,7 +6,7 @@ export class Raw<T = unknown> {
   constructor(
     readonly code: string,
     readonly value: T,
-  ) { }
+  ) {}
 }
 export const raw = <T>(code: string, value: T) => new Raw(code, value);
 
@@ -49,11 +49,11 @@ export interface Page {
 
 type ExampleSection = Pick<Page, 'slug' | 'title' | 'intro' | 'examples'>;
 
-const lorem = `<p>tugsheet is a drawer that you can drag, flick and snap. It works with any framework, or none, because you
-  render the markup and tugsheet adds the behavior.</p>`;
+const lorem = `<p>zupf is a drawer that you can drag, flick and snap. It works with any framework, or none, because you
+  render the markup and zupf adds the behavior.</p>`;
 
 const body = (title: string, text = lorem, extra = '') => `<div class="sheet-body">
-  <h2 data-tugsheet-title>${title}</h2>
+  <h2 data-zupf-title>${title}</h2>
   ${text}
   ${extra}
 </div>`;
@@ -70,13 +70,13 @@ export const examplePages: ExampleSection[] = [
         id: 'default',
         title: 'Default',
         description: 'Drag past 25% of the sheet’s height, or flick it down fast, to close it.',
-        markup: body('Drag me down', lorem, '<button class="btn" data-tugsheet-close>Close</button>'),
+        markup: body('Drag me down', lorem, '<button class="btn" data-zupf-close>Close</button>'),
       },
       {
         id: 'scaled',
         title: 'Scaled background',
         description:
-          'Wrap your app in <code>[data-tugsheet-wrapper]</code> and set <code>scaleBackground</code> to push the page back while the sheet is open, as iOS does.',
+          'Wrap your app in <code>[data-zupf-wrapper]</code> and set <code>scaleBackground</code> to push the page back while the sheet is open, as iOS does.',
         markup: body('Scaled background'),
         options: { scaleBackground: true },
       },
@@ -112,7 +112,7 @@ export const examplePages: ExampleSection[] = [
         id: 'snap-nonmodal',
         title: 'Interact with background',
         description: 'With <code>modal: false</code> the page stays usable, as in a maps app.',
-        markup: body('Non-modal', lorem, '<button class="btn" data-tugsheet-close>Close</button>'),
+        markup: body('Non-modal', lorem, '<button class="btn" data-zupf-close>Close</button>'),
         options: { snapPoints: ['148px', '355px', 1], modal: false },
       },
       {
@@ -138,7 +138,7 @@ export const examplePages: ExampleSection[] = [
         markup: body('Events', '<p>The live state is shown below the preview.</p>'),
         options: {
           snapPoints: [0.25, 0.5, 1],
-          onSnapPointChange: raw('(point, index) => console.log(point, index)', () => { }),
+          onSnapPointChange: raw('(point, index) => console.log(point, index)', () => {}),
         },
         extraCode: `sheet.subscribe((state) => console.log(state));`,
         live: true,
@@ -154,7 +154,7 @@ export const examplePages: ExampleSection[] = [
         id: `dir-${direction}`,
         title: direction[0].toUpperCase() + direction.slice(1),
         description: `<code>direction: '${direction}'</code>. Swipe ${direction === 'top' ? 'up' : direction} to close.`,
-        markup: body(`From the ${direction}`, lorem, '<button class="btn" data-tugsheet-close>Close</button>'),
+        markup: body(`From the ${direction}`, lorem, '<button class="btn" data-zupf-close>Close</button>'),
         options: { direction },
         noHandle: direction !== 'top',
       })),
@@ -163,7 +163,7 @@ export const examplePages: ExampleSection[] = [
         title: 'Scaled background',
         description:
           '<code>scaleBackground</code> works with every direction. The page shrinks away from the sheet, leaving a strip of background on the opposite edge.',
-        markup: body('Scaled background', lorem, '<button class="btn" data-tugsheet-close>Close</button>'),
+        markup: body('Scaled background', lorem, '<button class="btn" data-zupf-close>Close</button>'),
         options: { scaleBackground: true },
         variants: (['bottom', 'top', 'left', 'right'] as const).map((direction) => ({
           label: direction[0].toUpperCase() + direction.slice(1),
@@ -193,7 +193,7 @@ export const examplePages: ExampleSection[] = [
             markup: body(
               'Nested sheet',
               '<p>Drag me. The parent sheet follows.</p>',
-              '<button class="btn" data-tugsheet-close>Close</button>',
+              '<button class="btn" data-zupf-close>Close</button>',
             ),
             options: { trigger: '#open-nested' },
           },
@@ -205,7 +205,7 @@ export const examplePages: ExampleSection[] = [
     slug: 'inputs',
     title: 'Inputs',
     intro:
-      'When the virtual keyboard opens on mobile, tugsheet moves or resizes the sheet so the focused field stays visible. Selects and <code>[data-tugsheet-no-drag]</code> areas never start a drag.',
+      'When the virtual keyboard opens on mobile, zupf moves or resizes the sheet so the focused field stays visible. Selects and <code>[data-zupf-no-drag]</code> areas never start a drag.',
     examples: [
       {
         id: 'inputs',
@@ -218,7 +218,7 @@ export const examplePages: ExampleSection[] = [
     <input placeholder="Name" />
     <select><option>Bug</option><option>Idea</option></select>
     <textarea rows="4" placeholder="Message"></textarea>
-    <button class="btn" data-tugsheet-close>Send</button>
+    <button class="btn" data-zupf-close>Send</button>
   </form>`,
         ),
         options: { autoFocus: true },
@@ -244,7 +244,7 @@ ${longList}
   </ol>`,
         ),
         options: { handleOnly: true },
-        css: `#sheet { --tugsheet-size: 80%; }
+        css: `#sheet { --zupf-size: 80%; }
 #sheet .sheet-body { flex: 1; min-height: 0; overflow-y: auto; }`,
       },
     ],
@@ -263,7 +263,7 @@ ${longList}
         markup: body(
           'Accept terms',
           '<p>You must make a choice.</p>',
-          '<button class="btn" data-tugsheet-close>Accept</button>',
+          '<button class="btn" data-zupf-close>Accept</button>',
         ),
         options: { dismissible: false },
       },
@@ -282,13 +282,13 @@ ${longList}
         markup: body('Themed', '<p>Slower, springier easing and a lower close threshold.</p>'),
         options: { duration: 700, easing: 'cubic-bezier(0.2, 1.3, 0.3, 1)', closeThreshold: 0.1 },
         css: `#sheet {
-  --tugsheet-bg: #18181b;
-  --tugsheet-color: #fafafa;
-  --tugsheet-radius: 28px;
-  --tugsheet-handle-color: #52525b;
-  --tugsheet-size: 50%;
+  --zupf-bg: #18181b;
+  --zupf-color: #fafafa;
+  --zupf-radius: 28px;
+  --zupf-handle-color: #52525b;
+  --zupf-size: 50%;
 }
-#overlay { --tugsheet-overlay-bg: rgb(76 29 149 / 0.45); }`,
+#overlay { --zupf-overlay-bg: rgb(76 29 149 / 0.45); }`,
       },
       {
         id: 'controlled',

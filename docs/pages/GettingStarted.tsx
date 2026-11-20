@@ -6,14 +6,14 @@ const html = `<button id="open">Open Drawer</button>
 
 <div id="overlay"></div>
 <div id="sheet" hidden>
-  <div data-tugsheet-handle></div>
-  <h2 data-tugsheet-title>Hello</h2>
-  <p data-tugsheet-description>Drag me down to close.</p>
-  <button data-tugsheet-close>Close</button>
+  <div data-zupf-handle></div>
+  <h2 data-zupf-title>Hello</h2>
+  <p data-zupf-description>Drag me down to close.</p>
+  <button data-zupf-close>Close</button>
 </div>`;
 
-const js = `import { createSheet } from 'tugsheet';
-import 'tugsheet/style.css';
+const js = `import { createSheet } from 'zupf';
+import 'zupf/style.css';
 
 const sheet = createSheet({
   content: '#sheet',
@@ -22,22 +22,22 @@ const sheet = createSheet({
 });`;
 
 const css = `:root {
-  --tugsheet-bg: #fff;
-  --tugsheet-radius: 12px; /* 20px where squircles are supported */
-  --tugsheet-corner-shape: squircle; /* Chromium 139+; e.g. round, superellipse(3) */
-  --tugsheet-size: 96%;
-  --tugsheet-overlay-bg: rgb(0 0 0 / 0.4);
-  --tugsheet-handle-color: #d4d4d8;
+  --zupf-bg: #fff;
+  --zupf-radius: 12px; /* 20px where squircles are supported */
+  --zupf-corner-shape: squircle; /* Chromium 139+; e.g. round, superellipse(3) */
+  --zupf-size: 96%;
+  --zupf-overlay-bg: rgb(0 0 0 / 0.4);
+  --zupf-handle-color: #d4d4d8;
 }
 
-/* tugsheet sets these attributes for styling */
-[data-tugsheet-content][data-state='open'] { }
-[data-tugsheet-content][data-dragging] { }
-[data-tugsheet-content][data-direction='left'] { }`;
+/* zupf sets these attributes for styling */
+[data-zupf-content][data-state='open'] { }
+[data-zupf-content][data-dragging] { }
+[data-zupf-content][data-direction='left'] { }`;
 
 const preact = `import { createPortal } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
-import { createSheet } from 'tugsheet';
+import { createSheet } from 'zupf';
 
 export function Drawer({ trigger, children }) {
   const content = useRef(null);
@@ -56,7 +56,7 @@ export function Drawer({ trigger, children }) {
     <>
       <div ref={overlay} />
       <div ref={content} hidden>
-        <div data-tugsheet-handle />
+        <div data-zupf-handle />
         {children}
       </div>
     </>,
@@ -81,7 +81,7 @@ const react = `function Drawer({ trigger, children }) {
     <>
       <div ref={overlay} />
       <div ref={content} hidden>
-        <div data-tugsheet-handle />
+        <div data-zupf-handle />
         {children}
       </div>
     </>,
@@ -102,7 +102,7 @@ onBeforeUnmount(() => sheet.destroy());
   <Teleport to="body">
     <div ref="overlay"></div>
     <div ref="content" hidden>
-      <div data-tugsheet-handle></div>
+      <div data-zupf-handle></div>
       <slot />
     </div>
   </Teleport>
@@ -120,7 +120,7 @@ const svelte = `<script>
 <button onclick={() => sheet.open()}>Open</button>
 <div bind:this={overlay}></div>
 <div bind:this={content} hidden>
-  <div data-tugsheet-handle></div>
+  <div data-zupf-handle></div>
   <slot />
 </div>`;
 
@@ -129,7 +129,7 @@ export function GettingStarted() {
   return (
     <>
       <p class="lead">
-        tugsheet is a drawer (bottom sheet) that works with any framework. It is a port of{' '}
+        zupf is a drawer (bottom sheet) that works with any framework. It is a port of{' '}
         <a href="https://github.com/emilkowalski/vaul">vaul</a> without the React dependency. It has no dependencies, is
         about 9 KB gzipped, and is accessible by default.
       </p>
@@ -137,16 +137,16 @@ export function GettingStarted() {
       <h2 id="installation">Installation</h2>
       <CodeBlock
         tabs={[
-          { label: 'npm', lang: 'sh', code: 'npm install tugsheet' },
-          { label: 'pnpm', lang: 'sh', code: 'pnpm add tugsheet' },
-          { label: 'yarn', lang: 'sh', code: 'yarn add tugsheet' },
-          { label: 'bun', lang: 'sh', code: 'bun add tugsheet' },
+          { label: 'npm', lang: 'sh', code: 'npm install zupf' },
+          { label: 'pnpm', lang: 'sh', code: 'pnpm add zupf' },
+          { label: 'yarn', lang: 'sh', code: 'yarn add zupf' },
+          { label: 'bun', lang: 'sh', code: 'bun add zupf' },
         ]}
       />
 
       <h2 id="usage">Create a sheet</h2>
       <p>
-        Write the markup yourself and point <code>createSheet</code> at it. tugsheet adds the gestures, animation, focus
+        Write the markup yourself and point <code>createSheet</code> at it. zupf adds the gestures, animation, focus
         management and ARIA attributes.
       </p>
       <CodeBlock
@@ -164,9 +164,9 @@ export function GettingStarted() {
       </div>
       <Drawer id="gs" trigger={trigger}>
         <div class="sheet-body">
-          <h2 data-tugsheet-title>Hello</h2>
-          <p data-tugsheet-description>Drag me down to close.</p>
-          <button class="btn" data-tugsheet-close>
+          <h2 data-zupf-title>Hello</h2>
+          <p data-zupf-description>Drag me down to close.</p>
+          <button class="btn" data-zupf-close>
             Close
           </button>
         </div>

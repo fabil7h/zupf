@@ -22,9 +22,9 @@ function sheetHtml(id: string, overlay: string, e: Example): string {
   return [
     `<div id="${overlay}"></div>`,
     `<div id="${id}" hidden>`,
-    ...(e.noHandle || handleLast ? [] : ['  <div data-tugsheet-handle></div>']),
+    ...(e.noHandle || handleLast ? [] : ['  <div data-zupf-handle></div>']),
     ...e.markup.split('\n').map((l) => '  ' + l),
-    ...(!e.noHandle && handleLast ? ['  <div data-tugsheet-handle></div>'] : []),
+    ...(!e.noHandle && handleLast ? ['  <div data-zupf-handle></div>'] : []),
     `</div>`,
   ].join('\n');
 }
@@ -32,7 +32,7 @@ function sheetHtml(id: string, overlay: string, e: Example): string {
 export function exampleCode(ex: Example): { js: string; html: string; css?: string } {
   const trigger = ex.noTrigger ? '' : '<button id="open">Open Drawer</button>';
   const head = ex.options?.scaleBackground
-    ? `<div data-tugsheet-wrapper>\n  <!-- your app -->\n  ${trigger}\n</div>\n`
+    ? `<div data-zupf-wrapper>\n  <!-- your app -->\n  ${trigger}\n</div>\n`
     : trigger && `${trigger}\n`;
   const children = (ex.children ?? []).map((c) => '\n' + sheetHtml('nested-sheet', 'nested-overlay', c));
   const html = [head, sheetHtml('sheet', 'overlay', ex), ...children].filter(Boolean).join('\n');
@@ -43,8 +43,8 @@ export function exampleCode(ex: Example): { js: string; html: string; css?: stri
       .concat([`  parent: sheet,`, `});`]),
   );
   const js = [
-    `import { createSheet } from 'tugsheet';`,
-    `import 'tugsheet/style.css';`,
+    `import { createSheet } from 'zupf';`,
+    `import 'zupf/style.css';`,
     '',
     `const sheet = createSheet({`,
     `  content: '#sheet',`,

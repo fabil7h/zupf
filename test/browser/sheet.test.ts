@@ -12,10 +12,10 @@ function mount(opts: Omit<SheetOptions, 'content'> = {}, body = '<p>Body</p>') {
   root.innerHTML = `
     <div class="overlay"></div>
     <div class="content">
-      <div data-tugsheet-handle></div>
-      <h2 data-tugsheet-title>Title</h2>
+      <div data-zupf-handle></div>
+      <h2 data-zupf-title>Title</h2>
       ${body}
-      <button data-tugsheet-close>Close</button>
+      <button data-zupf-close>Close</button>
     </div>`;
   document.body.append(root);
   const content = root.querySelector<HTMLElement>('.content')!;
@@ -29,7 +29,7 @@ const translate = (el: HTMLElement) => {
   return { x: Math.round(m.m41) + 0, y: Math.round(m.m42) + 0, scale: m.a };
 };
 const handleOf = (content: HTMLElement) =>
-  content.querySelector<HTMLElement>('[data-tugsheet-handle]')!.getBoundingClientRect();
+  content.querySelector<HTMLElement>('[data-zupf-handle]')!.getBoundingClientRect();
 const H = () => window.innerHeight;
 
 afterEach(() => {
@@ -102,21 +102,21 @@ describe('dragging', () => {
     const { sheet, content } = mount({ dismissible: false });
     sheet.open();
     await settle();
-    expect(getComputedStyle(content.querySelector('[data-tugsheet-handle]')!).display).toBe('none');
+    expect(getComputedStyle(content.querySelector('[data-zupf-handle]')!).display).toBe('none');
     await userEvent.keyboard('{Escape}');
     const r = content.getBoundingClientRect();
     await commands.drag(r.x + 40, r.y + 10, 0, 300, 20, 20);
     await settle();
     expect(sheet.isOpen).toBe(true);
     expect(translate(content).y).toBe(0);
-    content.querySelector<HTMLElement>('[data-tugsheet-close]')!.click();
+    content.querySelector<HTMLElement>('[data-zupf-close]')!.click();
     expect(sheet.isOpen).toBe(false);
   });
 
   it('does not drag-close while content is scrolled', async () => {
     const items = Array.from({ length: 40 }, (_, i) => `<li>Item ${i}</li>`).join('');
     const { sheet, content } = mount({}, `<div class="scroller" style="overflow:auto;flex:1"><ol>${items}</ol></div>`);
-    content.style.setProperty('--tugsheet-size', '80%');
+    content.style.setProperty('--zupf-size', '80%');
     sheet.open();
     await settle();
     content.querySelector('.scroller')!.scrollTop = 300;
@@ -143,7 +143,7 @@ describe('snap points', () => {
     expect(getComputedStyle(overlay).opacity).toBe('1');
 
     h = handleOf(content);
-    await userEvent.click(content.querySelector('[data-tugsheet-handle]')!, { position: { x: 10, y: 2 } });
+    await userEvent.click(content.querySelector('[data-zupf-handle]')!, { position: { x: 10, y: 2 } });
     await wait(800);
     expect(sheet.getState().activeSnapPointIndex).toBe(2);
     expect(translate(content).y).toBe(0);
@@ -204,7 +204,7 @@ describe('text selection', () => {
   });
 
   it('no-drag areas inside a draggable sheet are selectable', async () => {
-    const { sheet, content } = mount({}, `<div data-tugsheet-no-drag>${text}</div><p class="plain">Plain text</p>`);
+    const { sheet, content } = mount({}, `<div data-zupf-no-drag>${text}</div><p class="plain">Plain text</p>`);
     sheet.open();
     await settle();
     expect(getComputedStyle(content.querySelector('.plain')!).userSelect).toBe('none');
@@ -227,7 +227,7 @@ describe('scaleBackground', () => {
     '%s sheet: the page recedes away from the sheet, leaving a strip on the far edge',
     async (direction) => {
       const wrapper = document.createElement('div');
-      wrapper.setAttribute('data-tugsheet-wrapper', '');
+      wrapper.setAttribute('data-zupf-wrapper', '');
       wrapper.style.cssText = 'height:100vh;background:#eee';
       document.body.prepend(wrapper);
       // A large push makes a wrong direction obvious (the strip would end up on the other edge).
@@ -253,7 +253,7 @@ describe('scaleBackground', () => {
 
   it('keeps sticky headers in view on a scrolled page and restores the wrapper on close', async () => {
     const wrapper = document.createElement('div');
-    wrapper.setAttribute('data-tugsheet-wrapper', '');
+    wrapper.setAttribute('data-zupf-wrapper', '');
     wrapper.innerHTML = `<header style="position:sticky;top:0;height:50px;background:#eee">Header</header>
       <div style="height:3000px">Long page</div>`;
     document.body.prepend(wrapper);
