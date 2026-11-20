@@ -56,7 +56,8 @@
     "preact-render-to-string": "^6.8.3",
     "publint": "^0.3.25",
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
-    "vite-plus": "1.7.0"
+    "vite-plus": "1.7.0",
+    "wrangler": "^4.165.0"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
