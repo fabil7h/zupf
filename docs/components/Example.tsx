@@ -2,7 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { Sheet, SheetOptions } from '../../src';
 import { exampleCode, resolveOptions } from '../codegen';
 import type { Example as ExampleDef } from '../examples';
-import { href, route } from '../router';
+import { href, useDocRoute } from '../router';
 import { CodeBlock, type CodeTab } from './CodeBlock';
 import { Drawer, useSheetState } from './Drawer';
 import { Icon } from './Icon';
@@ -57,6 +57,7 @@ function withVariant(ex: ExampleDef, index: number): ExampleDef {
 }
 
 export function Example({ ex: base }: { ex: ExampleDef }) {
+  const { slug } = useDocRoute();
   const trigger = useRef<HTMLButtonElement>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [variant, setVariant] = useState(0);
@@ -71,7 +72,7 @@ export function Example({ ex: base }: { ex: ExampleDef }) {
   return (
     <section id={ex.id}>
       <h2>
-        <a href={href(route.value.slug, ex.id)}>
+        <a href={href(slug, ex.id)}>
           {ex.title}
           <Icon name="link" class="anchor-icon" />
         </a>

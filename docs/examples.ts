@@ -43,6 +43,8 @@ export interface Page {
   group: 'Usage';
   intro?: string;
   examples?: Example[];
+  /** "On this page" entries for custom pages; defaults to `examples`. */
+  toc?: { id: string; title: string }[];
   /** Custom page body. */
   Component?: () => JSX.Element;
 }

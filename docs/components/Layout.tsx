@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Sheet } from '../../src';
 import type { Page } from '../examples';
 import { pages } from '../pages';
-import { href, route } from '../router';
+import { href, useDocRoute } from '../router';
 import { isDark, theme } from '../theme';
 import { Drawer } from './Drawer';
 import { Icon } from './Icon';
@@ -10,7 +10,7 @@ import { Icon } from './Icon';
 const groups = ['Usage'] as const;
 
 export function Nav() {
-  const current = route.value.slug;
+  const current = useDocRoute().slug;
   return (
     <>
       {groups.map((g) => (
@@ -31,7 +31,7 @@ export function Nav() {
 
 function Logo() {
   return (
-    <a href={href('getting-started')} class="logo">
+    <a href={href('')} class="logo">
       zupf
     </a>
   );
@@ -42,7 +42,8 @@ export function Header() {
   const [mobileNav, setMobileNav] = useState<Sheet | null>(null);
 
   // Close the mobile navigation sheet after navigating.
-  useEffect(() => mobileNav?.close(), [route.value.slug]);
+  const { slug } = useDocRoute();
+  useEffect(() => mobileNav?.close(), [slug]);
 
   return (
     <header class="topbar">
@@ -53,12 +54,7 @@ export function Header() {
         <Logo />
         <span class="tagline">A drawer that works with any framework. Optimized for mobile use.</span>
         <div class="topbar-actions">
-          <a
-            class="icon-btn"
-            href="https://github.com/fabil7h/zupf"
-            aria-label="GitHub repository"
-            title="GitHub"
-          >
+          <a class="icon-btn" href="https://github.com/fabil7h/zupf" aria-label="GitHub repository" title="GitHub">
             <Icon name="github" />
           </a>
           <button
@@ -113,8 +109,8 @@ export function Pager({ page }: { page: Page }) {
 }
 
 export function Toc({ page }: { page: Page }) {
-  const examples = page.examples ?? [];
-  const [activeId, setActiveId] = useState(route.value.anchor ?? examples[0]?.id ?? '');
+  const examples = page.toc ?? page.examples ?? [];
+  const [activeId, setActiveId] = useState(examples[0]?.id ?? '');
 
   useEffect(() => {
     let frame = 0;
@@ -139,7 +135,7 @@ export function Toc({ page }: { page: Page }) {
     const syncUrl = () => {
       if (!syncEnabled || !pendingId) return;
       const nextHash = href(page.slug, pendingId);
-      if (location.hash !== nextHash) history.replaceState(null, '', nextHash);
+      if (location.pathname + location.hash !== nextHash) history.replaceState(null, '', nextHash);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(() => updateActive(true));

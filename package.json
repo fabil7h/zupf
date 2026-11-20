@@ -33,7 +33,7 @@
   "scripts": {
     "dev": "vp dev docs",
     "build": "vp pack",
-    "docs:build": "vp build docs",
+    "docs:build": "vp build docs && vp build docs --ssr entry-server.tsx --outDir ../docs-server && node docs/prerender.mjs",
     "docs:preview": "vp preview docs",
     "docs:start": "npm run docs:build && npm run docs:preview",
     "check": "vp check",
@@ -49,6 +49,8 @@
     "jsdom": "^31.0.1",
     "playwright": "^1.65.1",
     "preact": "^11.2.0",
+    "preact-iso": "^2.12.2",
+    "preact-render-to-string": "^6.8.3",
     "publint": "^0.3.25",
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
     "vite-plus": "1.7.0"

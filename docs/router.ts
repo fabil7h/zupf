@@ -1,21 +1,17 @@
-import { signal } from '@preact/signals';
+import { useLocation } from 'preact-iso';
 
-export interface Route {
+export interface DocRoute {
   slug: string;
   anchor?: string;
 }
 
-function parse(): Route {
-  const [, slug = 'getting-started', anchor] = location.hash.match(/^#\/([\w-]+)(?:#([\w-]+))?/) ?? [];
-  return { slug, anchor };
+/** The current docs page (`''` on the landing page) and `#anchor`, from preact-iso's location. */
+export function useDocRoute(): DocRoute {
+  const { path, url } = useLocation();
+  const slug = path.split('/').find(Boolean) ?? '';
+  return { slug, anchor: url.split('#')[1] };
 }
 
-/** Hash route, e.g. `#/snap-points#snap-seq`. */
-export const route = signal<Route>(parse());
-
-window.addEventListener('hashchange', () => {
-  const next = parse();
-  if (next.slug !== route.value.slug || next.anchor !== route.value.anchor) route.value = next;
-});
-
-export const href = (slug: string, anchor?: string): string => `#/${slug}${anchor ? `#${anchor}` : ''}`;
+/** Real paths with a trailing slash (`/drawer/#snap-seq`), so each page is a prerendered `drawer/index.html`. */
+export const href = (slug: string, anchor?: string): string =>
+  `/${slug ? `${slug}/` : ''}${anchor ? `#${anchor}` : ''}`;

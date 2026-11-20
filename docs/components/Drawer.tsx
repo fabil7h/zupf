@@ -25,9 +25,12 @@ export function Drawer({ id, options, trigger, nested, noHandle, onReady, childr
   const overlay = useRef<HTMLDivElement>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const waitingForParent = nested && !parent;
+  // Portals need `document.body`: render nothing on the server and on the first client render (hydration).
+  const [mounted, setMounted] = useState(false);
+  useLayoutEffect(() => setMounted(true), []);
 
   useLayoutEffect(() => {
-    if (waitingForParent) return undefined;
+    if (!mounted || waitingForParent) return undefined;
     const s = createSheet({
       ...options,
       content: content.current!,
@@ -39,9 +42,9 @@ export function Drawer({ id, options, trigger, nested, noHandle, onReady, childr
     onReady?.(s);
     return () => s.destroy();
     // Options are applied once; use sheet.setOptions() for runtime changes.
-  }, [waitingForParent]);
+  }, [mounted, waitingForParent]);
 
-  if (waitingForParent) return null;
+  if (!mounted || waitingForParent) return null;
 
   return createPortal(
     <SheetContext.Provider value={sheet}>
