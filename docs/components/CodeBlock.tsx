@@ -15,7 +15,11 @@ export function CodeBlock({ tabs }: { tabs: CodeTab[] }) {
   const showTabs = tabs.length > 1 || !!tabs[0].label;
 
   const copy = async () => {
-    await navigator.clipboard.writeText(current.code.trim());
+    try {
+      await navigator.clipboard.writeText(current.code.trim());
+    } catch {
+      return; // Clipboard denied (permissions, insecure context): leave the button as is.
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
@@ -32,7 +36,7 @@ export function CodeBlock({ tabs }: { tabs: CodeTab[] }) {
             ))}
           </div>
         )}
-        <button class="copy" aria-label={copied ? 'Copied' : 'Copy code'} title="Copy code" onClick={copy}>
+        <button class="copy" aria-label={copied ? 'Copied' : 'Copy code'} title="Copy code" onClick={() => void copy()}>
           <Icon name={copied ? 'check' : 'copy'} />
         </button>
       </div>

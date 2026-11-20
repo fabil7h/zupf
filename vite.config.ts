@@ -54,15 +54,65 @@ export default defineConfig({
   // Oxlint
   lint: {
     ignorePatterns: ['dist/**', 'docs-dist/**'],
-    plugins: ['typescript', 'unicorn', 'oxc', 'import'],
+    plugins: ['typescript', 'unicorn', 'oxc', 'import', 'promise', 'react'],
     categories: { correctness: 'error', suspicious: 'warn', perf: 'warn' },
     options: { typeAware: true, typeCheck: true },
     rules: {
+      // Security: code injection, XSS sinks, unsafe links.
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+      'no-script-url': 'error',
+      'no-proto': 'error',
+      'no-caller': 'error',
+      'react/no-danger': 'error',
+      'react/jsx-no-script-url': 'error',
+      'react/jsx-no-target-blank': 'error',
+      'react/iframe-missing-sandbox': 'error',
+      'unicorn/no-document-cookie': 'error',
+      'typescript/no-floating-promises': 'error',
+      'typescript/no-misused-promises': 'error',
+
+      // Code smells.
+      complexity: ['warn', { max: 15 }],
+      'max-depth': ['warn', { max: 4 }],
+      'max-params': ['warn', { max: 4 }],
+      'max-nested-callbacks': ['warn', { max: 4 }],
+      'max-lines-per-function': ['warn', { max: 120, skipBlankLines: true, skipComments: true }],
+      'no-nested-ternary': 'warn',
+      'no-param-reassign': 'warn',
+      eqeqeq: ['warn', 'smart'],
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'typescript/no-explicit-any': 'warn',
+      'typescript/switch-exhaustiveness-check': 'warn',
+      'import/no-cycle': 'error',
+
+      // Docs use Preact's automatic JSX runtime and `class`, not React.
+      'react/react-in-jsx-scope': 'off',
+      'react/no-unknown-property': 'off',
+      // Docs effects intentionally run once on mount and mutate refs; surface, don't block.
+      'react-hooks/exhaustive-deps': 'warn',
+      'react/immutability': 'warn',
+
       // DOM code narrows event targets and query results constantly; guards are used where it matters.
       'typescript/no-unsafe-type-assertion': 'off',
       // Side-effect imports: stylesheets and type augmentation.
       'import/no-unassigned-import': ['warn', { allow: ['**/*.css', 'vite-plus/test/browser'] }],
     },
+    overrides: [
+      {
+        // Reviewed HTML sinks: all render authored, static content (or escaped via docs/highlight.ts).
+        // Any new `dangerouslySetInnerHTML` outside this list fails the build.
+        files: [
+          'docs/app.tsx',
+          'docs/pages/Drawer.tsx',
+          'docs/components/Icon.tsx',
+          'docs/components/CodeBlock.tsx',
+          'docs/components/Example.tsx',
+        ],
+        rules: { 'react/no-danger': 'off' },
+      },
+    ],
   },
 
   // Oxfmt
