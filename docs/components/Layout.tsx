@@ -53,7 +53,7 @@ export function Header() {
           <Icon name="list" />
         </button>
         <Logo />
-        <span class="tagline">A drawer that works with any framework. Optimized for mobile use.</span>
+        <span class="tagline">Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.</span>
         <div class="topbar-actions">
           <a class="icon-btn" href="https://github.com/fabil7h/zupf" aria-label="GitHub repository" title="GitHub">
             <Icon name="github" />
@@ -77,7 +77,9 @@ export function Header() {
       >
         <div class="mobile-nav-head">
           <Logo />
-          <span class="mobile-nav-tagline">A drawer that works with any framework. Optimized for mobile use.</span>
+          <span class="mobile-nav-tagline">
+            Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.
+          </span>
         </div>
         <Nav />
       </Drawer>

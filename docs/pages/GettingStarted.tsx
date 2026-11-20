@@ -1,6 +1,7 @@
 import { useRef } from 'preact/hooks';
 import { CodeBlock } from '../components/CodeBlock';
 import { Drawer } from '../components/Drawer';
+import { href } from '../router';
 
 const html = `<button id="open">Open Drawer</button>
 
@@ -34,6 +35,22 @@ const css = `:root {
 [data-zupf-content][data-state='open'] { }
 [data-zupf-content][data-dragging] { }
 [data-zupf-content][data-direction='left'] { }`;
+
+const more = `import { createPullToRefresh, createGestures } from 'zupf';
+import 'zupf/pull-to-refresh.css'; // optional defaults
+
+createPullToRefresh({
+  content: '#list',
+  onRefresh: () => loadNewItems(), // return a promise to keep the indicator until it settles
+});
+
+createGestures({
+  target: '#photo',
+  gestures: {
+    'double-tap': () => like(),
+    'long-press': () => openMenu(),
+  },
+});`;
 
 const preact = `import { createPortal } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
@@ -129,9 +146,30 @@ export function GettingStarted() {
   return (
     <>
       <p class="lead">
-        zupf is a drawer (bottom sheet) that works with any framework. It is a port of{' '}
+        zupf is a small toolkit for touch interactions that works with any framework: a drawer (bottom sheet),
+        pull-to-refresh and a gesture recognizer. The drawer is a port of{' '}
         <a href="https://github.com/emilkowalski/vaul">vaul</a> without the React dependency. It has no dependencies, is
         about 13 KB gzipped, and is accessible by default.
+      </p>
+
+      <h2 id="overview">What's in the box</h2>
+      <ul>
+        <li>
+          <a href={href('drawer')}>Drawer</a>: snap points, four directions, nested sheets, scaled background, non-modal
+          mode and iOS Safari fixes.
+        </li>
+        <li>
+          <a href={href('pull-to-refresh')}>Pull to refresh</a>: the drawer's gesture handling on any scrollable list,
+          with a customizable indicator.
+        </li>
+        <li>
+          <a href={href('gestures')}>Gestures</a>: taps, long presses, swipes and custom sequences like{' '}
+          <code>tap tap hold+swipe-left</code> on one element.
+        </li>
+      </ul>
+      <p>
+        Each one is a plain function that takes elements or selectors, so you render the markup and zupf adds the
+        behavior.
       </p>
 
       <h2 id="installation">Installation</h2>
@@ -178,6 +216,18 @@ export function GettingStarted() {
         CSS always wins. For quick theming, set CSS variables:
       </p>
       <CodeBlock tabs={[{ lang: 'css', code: css }]} />
+
+      <h2 id="more">Pull to refresh and gestures</h2>
+      <p>
+        They ship in the same package. <code>createPullToRefresh</code> and <code>createGestures</code> follow the same
+        pattern as <code>createSheet</code>: pass elements, get an instance with <code>setOptions</code>,{' '}
+        <code>getState</code>, <code>subscribe</code> and <code>destroy</code>.
+      </p>
+      <CodeBlock tabs={[{ lang: 'js', code: more }]} />
+      <p>
+        See <a href={href('pull-to-refresh')}>Pull to Refresh</a> and <a href={href('gestures')}>Gestures</a> for the
+        options and styling hooks.
+      </p>
 
       <h2 id="frameworks">Frameworks</h2>
       <p>
