@@ -19,12 +19,13 @@ export function closedTransform(direction: Direction): string {
   return translate(direction, directionSign(direction) === 1 ? '100%' : '-100%');
 }
 
-/** Set inline styles. Keys starting with `--` are set as custom properties. */
+/** Set inline styles. Keys containing `-` (e.g. `--x`, `clip-path`) are set via `setProperty`. */
 export function css(el: HTMLElement | null | undefined, styles: Record<string, string>): void {
   if (!el) return;
-  for (const [key, value] of Object.entries(styles)) {
-    if (key.startsWith('--') || key.includes('-')) el.style.setProperty(key, value);
-    else (el.style as unknown as Record<string, string>)[key] = value;
+  // `for...in` avoids the per-call entry arrays of `Object.entries` (this runs on every pointermove).
+  for (const key in styles) {
+    if (key.includes('-')) el.style.setProperty(key, styles[key]);
+    else (el.style as unknown as Record<string, string>)[key] = styles[key];
   }
 }
 
@@ -41,6 +42,29 @@ export function getTranslate(el: HTMLElement, direction: Direction): number | nu
 /** Rubber-band resistance used when dragging past the fully-open position. */
 export function dampen(v: number): number {
   return 8 * (Math.log(v + 1) - 2);
+}
+
+/**
+ * Runs `fn` once, after the next frame has been rendered (not just before it, as `requestAnimationFrame` does).
+ * Falls back to a timeout, since hidden tabs render no frames.
+ */
+export function afterNextFrame(fn: () => void): Cleanup {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const run = () => {
+    cancel();
+    fn();
+  };
+  const raf = requestAnimationFrame(() => {
+    clearTimeout(fallback);
+    timer = setTimeout(run);
+  });
+  const fallback = setTimeout(run, 100);
+  const cancel = () => {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    clearTimeout(fallback);
+  };
+  return cancel;
 }
 
 export function chain(...fns: Array<Cleanup | undefined | null | false>): Cleanup {
