@@ -3,7 +3,7 @@ import { Table } from '../components/Text';
 export function Api() {
   return (
     <>
-      <p class="lead">
+      <p class="text-base text-muted">
         <code>createSheet(options)</code> returns a <code>Sheet</code>. Elements can be given as elements or as
         selectors.
       </p>

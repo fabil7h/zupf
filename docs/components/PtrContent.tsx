@@ -7,9 +7,11 @@ export interface ContentKind<S> {
   initial: () => S;
   refresh: (state: S) => S;
   View: (props: { state: S }) => JSX.Element;
-  /** Class for the pulled content element. */
-  class: string;
+  /** Classes for the pulled content element. */
+  class?: string;
 }
+
+/** Meta text inside the demo lists. */
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const pick = <T,>(list: readonly T[], i: number) => list[((i % list.length) + list.length) % list.length];
@@ -73,21 +75,26 @@ const mail = (i: number, time: string, unread = false): Mail => ({
 });
 
 export const inbox: ContentKind<Mail[]> = {
-  class: 'c-inbox',
   initial: () => Array.from({ length: 14 }, (_, i) => mail(i, `${i + 1}h`)),
   refresh: (list) => [mail(list.length, 'now', true), mail(list.length + 1, 'now', true), ...list],
   View: ({ state }) => (
     <ul>
       {state.map((m) => (
-        <li key={m.id} data-unread={m.unread || undefined}>
-          <span class="c-avatar">{m.from[0]}</span>
-          <span class="c-mail">
-            <span class="c-row">
+        <li
+          key={m.id}
+          class="group flex gap-3 border-b border-line px-4 py-3 text-fg"
+          data-unread={m.unread || undefined}
+        >
+          <span class="grid size-9 flex-none place-items-center rounded-full border border-line bg-surface text-sm font-semibold corner-round group-data-unread:border-info group-data-unread:bg-info group-data-unread:text-white">
+            {m.from[0]}
+          </span>
+          <span class="grid min-w-0 gap-0.5 text-sm">
+            <span class="flex justify-between gap-2">
               <strong>{m.from}</strong>
-              <small>{m.time}</small>
+              <small class="text-xs text-muted">{m.time}</small>
             </span>
-            <span class="c-subject">{m.subject}</span>
-            <span class="c-preview">{m.preview}</span>
+            <span class="truncate group-data-unread:font-semibold">{m.subject}</span>
+            <span class="truncate text-[13px] text-muted">{m.preview}</span>
           </span>
         </li>
       ))}
@@ -125,13 +132,12 @@ const phrase = (i: number): Phrase => {
 
 /** A single phrase that is replaced on refresh (for a small widget). */
 export const quoteOfTheDay: ContentKind<{ index: number; phrase: Phrase }> = {
-  class: 'c-qotd',
   initial: () => ({ index: 3, phrase: phrase(3) }),
   refresh: (s) => ({ index: s.index + 1, phrase: phrase(s.index + 1) }),
   View: ({ state }) => (
-    <div class="c-qotd-body">
+    <div class="flex h-full flex-col justify-between p-4">
       <small>Phrase of the day</small>
-      <p>{state.phrase.text}</p>
+      <p class="m-0 text-[19px] leading-[1.3] font-semibold text-fg">{state.phrase.text}</p>
       <small>#{state.phrase.tag}</small>
     </div>
   ),
@@ -167,45 +173,51 @@ const dashboardState = (): Dashboard => ({
 });
 
 export const dashboard: ContentKind<Dashboard> = {
-  class: 'c-dashboard',
   initial: dashboardState,
   refresh: dashboardState,
   View: ({ state }) => (
-    <div class="c-dash">
-      <div class="c-dash-head">
+    <div class="grid min-h-full gap-3 bg-surface p-3.5">
+      <div class="flex items-baseline justify-between text-fg">
         <strong>Overview</strong>
-        <small>Updated {state.updated}</small>
+        <small class="text-xs text-muted">Updated {state.updated}</small>
       </div>
-      <div class="c-kpis">
+      <div class="grid grid-cols-2 gap-2">
         {state.kpis.map((k) => (
-          <div key={k.label} class="c-kpi">
-            <small>{k.label}</small>
-            <strong>{k.value}</strong>
-            <span class={k.delta >= 0 ? 'c-up' : 'c-down'}>
+          <div key={k.label} class="kpi-card">
+            <small class="text-xs text-muted">{k.label}</small>
+            <strong class="text-xl text-fg tabular-nums">{k.value}</strong>
+            <span class={`text-xs ${k.delta >= 0 ? 'text-success' : 'text-danger'}`}>
               {k.delta >= 0 ? '▲' : '▼'} {Math.abs(k.delta).toFixed(1)}%
             </span>
           </div>
         ))}
       </div>
-      <div class="c-card">
-        <small>Sessions, last 12 hours</small>
-        <div class="c-bars">
+      <div class="kpi-card">
+        <small class="text-xs text-muted">Sessions, last 12 hours</small>
+        <div class="mt-1.5 flex h-20 items-end gap-1">
           {state.bars.map((v, i) => (
-            <span key={i} style={{ scale: `1 ${v}` }} />
+            <span
+              key={i}
+              class="h-full flex-1 origin-bottom rounded-t-[3px] bg-linear-to-b from-[#6366f1] to-[#a5b4fc] transition-[scale] duration-400 ease-[ease] motion-reduce:transition-none"
+              style={{ scale: `1 ${v}` }}
+            />
           ))}
         </div>
       </div>
-      <div class="c-card">
-        <small>Recent orders</small>
-        <table class="c-orders">
+      <div class="kpi-card">
+        <small class="text-xs text-muted">Recent orders</small>
+        <table class="w-full border-collapse text-xs text-fg tabular-nums">
           <tbody>
             {state.orders.map((o) => (
               <tr key={o.id}>
-                <td>#{o.id}</td>
-                <td>{o.customer}</td>
-                <td>{o.total}</td>
-                <td>
-                  <span class="c-pill" data-status={o.status}>
+                <td class="order-cell whitespace-nowrap">#{o.id}</td>
+                <td class="order-cell">{o.customer}</td>
+                <td class="order-cell">{o.total}</td>
+                <td class="order-cell text-right">
+                  <span
+                    class="rounded-full bg-surface px-2 py-0.5 text-[11px] data-[status=Paid]:bg-success/12 data-[status=Paid]:text-success data-[status=Pending]:bg-[rgb(234_179_8/0.15)] data-[status=Pending]:text-[#a16207]"
+                    data-status={o.status}
+                  >
                     {o.status}
                   </span>
                 </td>
@@ -243,16 +255,18 @@ const note = (i: number, time: string): Note => {
 };
 
 export const notifications: ContentKind<Note[]> = {
-  class: 'c-notes',
   initial: () => Array.from({ length: 12 }, (_, i) => note(i, `${i + 1}h ago`)),
   refresh: (list) => [note(list.length, 'now'), ...list],
   View: ({ state }) => (
     <ul>
       {state.map((n) => (
-        <li key={n.id}>
-          <span class="c-note-icon">{n.icon}</span>
+        <li
+          key={n.id}
+          class="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3.5 text-sm text-fg"
+        >
+          <span class="text-lg">{n.icon}</span>
           <span>{n.text}</span>
-          <small>{n.time}</small>
+          <small class="text-xs text-muted">{n.time}</small>
         </li>
       ))}
     </ul>
@@ -276,18 +290,20 @@ const stocksState = (prev?: Ticker[]): Ticker[] =>
   );
 
 export const stocks: ContentKind<{ updated: string; tickers: Ticker[] }> = {
-  class: 'c-stocks',
   initial: () => ({ updated: clock(), tickers: stocksState() }),
   refresh: (s) => ({ updated: clock(), tickers: stocksState(s.tickers) }),
   View: ({ state }) => (
     <div>
-      <small class="c-widget-head">Watchlist · {state.updated}</small>
+      <small class="block px-3.5 pt-3 pb-1.5">Watchlist · {state.updated}</small>
       <ul>
         {state.tickers.map((t) => (
-          <li key={t.symbol}>
+          <li
+            key={t.symbol}
+            class="grid grid-cols-[1fr_auto_auto] gap-2 px-3.5 py-[7px] text-[13px] text-fg tabular-nums"
+          >
             <strong>{t.symbol}</strong>
             <span>{t.price.toFixed(2)}</span>
-            <span class={t.change >= 0 ? 'c-up' : 'c-down'}>
+            <span class={`w-[52px] text-right ${t.change >= 0 ? 'text-success' : 'text-danger'}`}>
               {t.change >= 0 ? '+' : ''}
               {t.change.toFixed(2)}%
             </span>
@@ -346,13 +362,17 @@ const cover = (hue: number) => ({
 export function BlogHeader() {
   return (
     <>
-      <div class="c-blog-head">
-        <strong>The Field Notes</strong>
+      <div class="grid gap-0.5">
+        <strong class="font-serif text-2xl tracking-[-0.01em]">The Field Notes</strong>
         <small>Essays on building for small screens</small>
       </div>
-      <nav class="c-chips" aria-label="Topics">
+      <nav class="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]" aria-label="Topics">
         {blogTopics.map((t, i) => (
-          <span key={t} class="c-chip" data-active={i === 0 || undefined}>
+          <span
+            key={t}
+            class="flex-none rounded-full border border-line-strong px-3 py-[5px] text-[13px] text-muted corner-round data-active:border-fg data-active:bg-fg data-active:text-canvas"
+            data-active={i === 0 || undefined}
+          >
             {t}
           </span>
         ))}
@@ -363,32 +383,39 @@ export function BlogHeader() {
 
 /** Blog posts: a featured post on top, older posts below. Refreshing publishes a new featured post. */
 export const blog: ContentKind<{ next: number; posts: Post[] }> = {
-  class: 'c-blog',
+  class: 'bg-canvas',
   initial: () => ({ next: 6, posts: Array.from({ length: 6 }, (_, i) => post(i)) }),
   refresh: (s) => ({ next: s.next + 1, posts: [post(s.next, true), ...s.posts.map((p) => ({ ...p, fresh: false }))] }),
   View: ({ state }) => {
     const [featured, ...rest] = state.posts;
     return (
-      <div class="c-blog-page">
-        <article class="c-featured" data-fresh={featured.fresh || undefined}>
-          <div class="c-cover" style={cover(featured.hue)}>
-            {featured.fresh && <span class="c-new">New</span>}
+      <div class="grid gap-3.5 px-4 pt-4 pb-6 text-fg">
+        <article class="group grid gap-1.5" data-fresh={featured.fresh || undefined}>
+          <div
+            class="relative mb-1 aspect-video rounded-3xl group-data-fresh:animate-pop motion-reduce:animate-none!"
+            style={cover(featured.hue)}
+          >
+            {featured.fresh && (
+              <span class="absolute top-2.5 left-2.5 rounded-full bg-white px-[9px] py-[3px] text-[11px] font-semibold text-[#111] corner-round">
+                New
+              </span>
+            )}
           </div>
           <small>
             {featured.topic} · {featured.minutes} min read
           </small>
-          <h3>{featured.title}</h3>
-          <p>{featured.excerpt}</p>
+          <h3 class="m-0 font-serif text-[22px] leading-[1.2] font-bold">{featured.title}</h3>
+          <p class="m-0 text-sm leading-normal text-muted">{featured.excerpt}</p>
           <small>by {featured.author}</small>
         </article>
         {rest.map((p) => (
-          <article key={p.id} class="c-post">
-            <div class="c-thumb" style={cover(p.hue)} />
+          <article key={p.id} class="grid grid-cols-[72px_1fr] items-center gap-3 border-t border-line pt-3.5">
+            <div class="aspect-square rounded-xl" style={cover(p.hue)} />
             <div>
               <small>
                 {p.topic} · {p.minutes} min
               </small>
-              <h4>{p.title}</h4>
+              <h4 class="my-0.5 text-[15px] leading-[1.3] font-bold">{p.title}</h4>
               <small>{p.author}</small>
             </div>
           </article>

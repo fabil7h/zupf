@@ -24,10 +24,10 @@ function PageView({ page }: { page: Page }) {
   }, [page, anchor]);
 
   return (
-    <main class="content">
+    <main class="grid grid-cols-[minmax(0,720px)] px-12 pt-10 pb-24 max-md:px-5 max-md:pt-7 max-md:pb-16">
       <article>
         <h1>{page.title}</h1>
-        {page.intro && <p class="lead" dangerouslySetInnerHTML={{ __html: page.intro }} />}
+        {page.intro && <p class="text-base text-muted" dangerouslySetInnerHTML={{ __html: page.intro }} />}
         {page.Component ? <page.Component /> : page.examples?.map((ex) => <Example key={ex.id} ex={ex} />)}
         <Pager page={page} />
       </article>
@@ -42,10 +42,13 @@ function DocsPage() {
 
   return (
     // Everything inside the wrapper is scaled back by `scaleBackground`; sheets portal to <body>.
-    <div data-zupf-wrapper class="app">
+    <div data-zupf-wrapper class="min-h-screen bg-canvas">
       <Header page={page} />
-      <div class="layout">
-        <nav class="sidebar" aria-label="Documentation">
+      <div class="mx-auto grid max-w-[1280px] grid-cols-[240px_minmax(0,1fr)] max-md:grid-cols-[minmax(0,1fr)]">
+        <nav
+          class="sticky top-14 h-[calc(100vh-56px)] self-start overflow-y-auto border-r border-line pt-7 pr-4 pb-7 pl-6 max-md:hidden"
+          aria-label="Documentation"
+        >
           <Nav />
           <Toc page={page} />
         </nav>
@@ -58,10 +61,12 @@ function DocsPage() {
 
 function NotFound() {
   return (
-    <main class="content">
+    <main class="grid grid-cols-[minmax(0,720px)] px-12 pt-10 pb-24 max-md:px-5 max-md:pt-7 max-md:pb-16">
       <h1>Page not found</h1>
       <p>
-        <a href="/">Back to zupf</a>
+        <a class="underline" href="/">
+          Back to zupf
+        </a>
       </p>
     </main>
   );

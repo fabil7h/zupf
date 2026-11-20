@@ -14,7 +14,7 @@ export type IconName = keyof typeof icons;
 export function Icon({ name, size = 16, class: className }: { name: IconName; size?: number; class?: string }) {
   return (
     <span
-      class={className ? `icon ${className}` : 'icon'}
+      class={`icon ${className ?? ''}`}
       style={{ '--icon-size': `${size}px` }}
       aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: icons[name] }}

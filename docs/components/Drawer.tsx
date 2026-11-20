@@ -15,11 +15,13 @@ export interface DrawerProps {
   /** Nest inside the sheet from context. */
   nested?: boolean;
   noHandle?: boolean;
+  /** Classes for the content element. */
+  class?: string;
   onReady?: (sheet: Sheet) => void;
   children?: ComponentChildren;
 }
 
-export function Drawer({ id, options, trigger, nested, noHandle, onReady, children }: DrawerProps) {
+export function Drawer({ id, options, trigger, nested, noHandle, class: className, onReady, children }: DrawerProps) {
   const parent = useContext(SheetContext);
   const content = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
@@ -50,7 +52,7 @@ export function Drawer({ id, options, trigger, nested, noHandle, onReady, childr
   return createPortal(
     <SheetContext.Provider value={sheet}>
       <div ref={overlay} id={`${id}-overlay`} />
-      <div ref={content} id={`${id}-sheet`} hidden>
+      <div ref={content} id={`${id}-sheet`} class={className} hidden>
         {/* The handle sits on the edge facing the page: below the content for top sheets. */}
         {!noHandle && options?.direction !== 'top' && <div data-zupf-handle />}
         {children}

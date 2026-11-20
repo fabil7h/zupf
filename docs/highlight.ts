@@ -1,9 +1,22 @@
 // Tiny dependency-free syntax highlighter for the docs (js/ts, html, css, sh).
 export type Lang = 'js' | 'html' | 'css' | 'sh';
 
+/** Token type → classes. */
+const tokenClass = {
+  k: 'text-syntax-keyword',
+  s: 'text-syntax-string',
+  n: 'text-syntax-number',
+  c: 'text-subtle italic',
+  f: 'text-syntax-function',
+  p: 'text-syntax-property',
+} as const;
+type Token = keyof typeof tokenClass;
+
+const span = (token: Token, html: string) => `<span class="${tokenClass[token]}">${html}</span>`;
+
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const rules: Record<Lang, [RegExp, string][]> = {
+const rules: Record<Lang, [RegExp, Token][]> = {
   js: [
     [/\/\/[^\n]*/y, 'c'],
     [/'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"/y, 's'],
@@ -28,14 +41,14 @@ const rules: Record<Lang, [RegExp, string][]> = {
 
 function highlightHtml(code: string): string {
   return code.replace(/<!--[\s\S]*?-->|<\/?[\w-]+[^>]*>|[^<]+/g, (part) => {
-    if (part.startsWith('<!--')) return `<span class="t-c">${esc(part)}</span>`;
+    if (part.startsWith('<!--')) return span('c', esc(part));
     if (!part.startsWith('<')) return esc(part);
     const [, open, name, attrs, close] = part.match(/^(<\/?)([\w-]+)([^>]*?)(\/?>)$/)!;
     const a = esc(attrs).replace(
       /([\w:@-]+)(=)?("[^"]*")?/g,
-      (_, n, eq, v) => `<span class="t-p">${n}</span>${eq ?? ''}${v ? `<span class="t-s">${v}</span>` : ''}`,
+      (_, n, eq, v) => `${span('p', n)}${eq ?? ''}${v ? span('s', v) : ''}`,
     );
-    return `<span class="t-k">${esc(open + name)}</span>${a}<span class="t-k">${esc(close)}</span>`;
+    return `${span('k', esc(open + name))}${a}${span('k', esc(close))}`;
   });
 }
 
@@ -49,7 +62,7 @@ export function highlight(code: string, lang: Lang): string {
       re.lastIndex = i;
       const m = re.exec(code);
       if (m && m[0].length) {
-        out += esc(plain) + `<span class="t-${cls}">${esc(m[0])}</span>`;
+        out += esc(plain) + span(cls, esc(m[0]));
         plain = '';
         i += m[0].length;
         continue outer;

@@ -11,6 +11,11 @@ import {
 import { Section } from '../components/Section';
 import { Table, Text } from '../components/Text';
 
+/** Fills over holdTime (500ms) while pressed; solid once it is a hold. */
+const HoldBar = () => (
+  <div class="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-current opacity-30 group-data-holding:opacity-100 group-data-pressed:scale-x-100 group-data-pressed:transition-[scale] group-data-pressed:duration-500 group-data-pressed:ease-linear motion-reduce:group-data-pressed:transition-none" />
+);
+
 // ───────────────────────────── demo helpers ─────────────────────────────
 
 const IDLE: GesturesState = { pressed: false, steps: [] };
@@ -51,15 +56,15 @@ const formatSteps = (steps: readonly (readonly string[])[]) => steps.map((s) => 
 
 const Result = ({ last, hint }: { last: { label: string; n: number } | null; hint: string }) =>
   last ? (
-    <strong key={last.n} class="gesture-result">
+    <strong key={last.n} class="animate-gesture-pop text-[22px] font-semibold motion-reduce:animate-none">
       {last.label}
     </strong>
   ) : (
-    <span class="gesture-hint">{hint}</span>
+    <span class="text-sm text-muted">{hint}</span>
   );
 
 const Log = ({ lines, empty }: { lines: string[]; empty: string }) => (
-  <pre class="preview-log">{lines.length ? lines.join('\n') : empty}</pre>
+  <pre class="demo-log">{lines.length ? lines.join('\n') : empty}</pre>
 );
 
 // ───────────────────────────── taps and long press ─────────────────────────────
@@ -113,9 +118,9 @@ createGestures({
         css: holdBarCss,
       }}
     >
-      <div ref={pad} class="gesture-pad">
+      <div ref={pad} class="gesture-pad group">
         <Result last={last} hint="Tap, double tap, triple tap or hold" />
-        <div class="hold-bar" />
+        <HoldBar />
       </div>
       <Log lines={log} empty="gesture   ← steps performed" />
     </Section>
@@ -138,9 +143,9 @@ function SwipePad({ pattern, hint }: { pattern: string; hint: string }) {
   useGestures(pad, { gestures: { [pattern]: fire } });
   return (
     <>
-      <div ref={pad} class="gesture-pad">
+      <div ref={pad} class="gesture-pad group">
         <Result last={last} hint={hint} />
-        <div class="hold-bar" />
+        <HoldBar />
       </div>
       <Log lines={log} empty="gesture   ← steps performed" />
     </>
@@ -219,8 +224,8 @@ createGestures({
 
 // The action buttons are plain buttons.
 list.addEventListener('click', (e) => {
-  const action = e.target.closest('[data-action]');
-  if (action) run(action.dataset.action, item(e));
+  const actionButton = e.target.closest('[data-action]');
+  if (actionButton) run(actionButton.dataset.action, item(e));
 });`,
     html: `<ul id="mails">
   <li>
@@ -345,7 +350,7 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
    */
   const animateOut = async (id: number, dir: 'left' | 'right') => {
     const li = list.current?.querySelector<HTMLElement>(`li[data-id="${id}"]`);
-    const row = li?.querySelector<HTMLElement>('.gesture-list-row');
+    const row = li?.querySelector<HTMLElement>('[data-row]');
     if (!li || !row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const from = getComputedStyle(row).translate;
     row.style.transition = 'none'; // the snap-back transition mustn't fight the animation
@@ -454,12 +459,12 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
       <ul
         ref={list}
         id="mails"
-        class="gesture-list"
+        class="group/list h-[300px] w-[min(100%,420px)] overflow-auto rounded-[12px] border border-line bg-canvas corner-round"
         data-swipe-actions={swipeActions || undefined}
         onPointerDown={(e) => {
           setActive(itemId(e.target));
           const li = (e.target as Element).closest<HTMLElement>('li[data-id]');
-          const row = li?.querySelector<HTMLElement>('.gesture-list-row');
+          const row = li?.querySelector<HTMLElement>('[data-row]');
           if (!swipeActions && li && row) drag.current = { x: e.clientX, li, row };
         }}
         onPointerMove={(e) => {
@@ -478,30 +483,43 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
         {mails.map((m) => (
           <li
             key={m.id}
+            class="mail-item group/item"
             data-id={m.id}
             data-active={m.id === active || undefined}
             data-open={m.id === open || undefined}
             data-leaving={leaving[m.id]}
             data-removed={removed[m.id]}
           >
-            <div class="gesture-list-row">
-              <span class="gesture-list-from">
+            <div
+              data-row
+              class="relative z-1 grid gap-0.5 bg-canvas px-4 py-3 [transition:translate_250ms_var(--ease-ios),background_150ms] group-data-open/item:-translate-x-[192px] group-data-holding/list:group-data-active/item:bg-surface motion-reduce:transition-none!"
+            >
+              <span class="text-sm font-semibold">
                 {m.from} {m.starred && <span aria-label="starred">★</span>}
               </span>
-              <span class="gesture-list-subject">{m.subject}</span>
+              <span class="text-[13px] text-muted">{m.subject}</span>
             </div>
             {swipeActions && (
-              <div class="gesture-list-actions" inert={m.id !== open}>
-                <button data-action="star">{m.starred ? 'Unstar' : 'Star'}</button>
-                <button data-action="archive">Archive</button>
-                <button data-action="delete">Delete</button>
+              <div
+                class="invisible absolute inset-y-0 right-0 flex [transition:visibility_0s_250ms] group-data-open/item:visible group-data-open/item:transition-none"
+                inert={m.id !== open}
+              >
+                <button class="swipe-action bg-warning" data-action="star">
+                  {m.starred ? 'Unstar' : 'Star'}
+                </button>
+                <button class="swipe-action bg-info" data-action="archive">
+                  Archive
+                </button>
+                <button class="swipe-action bg-danger" data-action="delete">
+                  Delete
+                </button>
               </div>
             )}
           </li>
         ))}
-        {!mails.length && <li class="gesture-list-empty">Inbox zero.</li>}
+        {!mails.length && <li class="mail-item group/item px-4 py-3 text-[13px] text-muted">Inbox zero.</li>}
       </ul>
-      <div class="preview-actions">
+      <div class="flex flex-wrap justify-center gap-2">
         <button class="btn" onClick={() => setMails(MAILS)}>
           Reset
         </button>
@@ -568,16 +586,25 @@ function FlowPad({ pattern }: { pattern: string }) {
   if (unlocked) hint = 'Unlocked';
   else if (current?.length) hint = `now: ${current.join(' + ')}`;
   return (
-    <div ref={pad} class="gesture-pad" data-unlocked={unlocked > 0 || undefined}>
-      <ol key={failed} class="gesture-flow" data-failed={failed > 0 || undefined} aria-label="Progress">
+    <div ref={pad} class="gesture-pad group" data-unlocked={unlocked > 0 || undefined}>
+      <ol
+        key={failed}
+        class="flex flex-wrap justify-center gap-1.5 data-failed:animate-shake motion-reduce:animate-none"
+        data-failed={failed > 0 || undefined}
+        aria-label="Progress"
+      >
         {steps.map((step, i) => (
-          <li key={i} data-state={stepState(i)}>
+          <li
+            key={i}
+            class="rounded-full border border-line-strong bg-canvas px-2.5 py-1 font-system-mono text-xs leading-[normal] text-muted transition-[background,color] duration-150 data-[state=active]:border-fg data-[state=active]:text-fg data-[state=done]:border-accent data-[state=done]:bg-accent data-[state=done]:text-accent-fg"
+            data-state={stepState(i)}
+          >
             {step.join(' + ')}
           </li>
         ))}
       </ol>
-      <span class="gesture-hint">{hint}</span>
-      <div class="hold-bar" />
+      <span class="text-sm text-muted">{hint}</span>
+      <HoldBar />
     </div>
   );
 }
@@ -615,8 +642,9 @@ gestures.subscribe(({ pressed, steps }) => {
 </div>`,
       }}
     >
-      <div class="gesture-flow-editor">
+      <div class="grid w-[min(100%,520px)] gap-2.5">
         <input
+          class="h-9 rounded-lg border border-line-strong bg-canvas px-3 font-system-mono text-sm leading-[normal] text-fg aria-invalid:border-danger"
           aria-label="Pattern"
           value={input}
           spellcheck={false}
@@ -624,14 +652,19 @@ gestures.subscribe(({ pressed, steps }) => {
           aria-invalid={!!error}
           onInput={(e) => setInput(e.currentTarget.value)}
         />
-        <div class="preview-actions">
+        <div class="flex flex-wrap justify-center gap-2">
           {presets.map((p) => (
-            <button key={p} class="btn gesture-chip" aria-pressed={p === pattern} onClick={() => setInput(p)}>
+            <button
+              key={p}
+              class="btn h-7 px-2.5 font-system-mono text-xs leading-[normal] font-normal aria-pressed:border-fg"
+              aria-pressed={p === pattern}
+              onClick={() => setInput(p)}
+            >
               {p}
             </button>
           ))}
         </div>
-        {error && <p class="gesture-error">{error}</p>}
+        {error && <p class="m-0 text-[13px] text-danger">{error}</p>}
       </div>
       <FlowPad key={pattern} pattern={pattern} />
     </Section>
@@ -652,7 +685,7 @@ export const gesturesToc = [
 export function GesturesPage() {
   return (
     <>
-      <p class="lead">
+      <p class="text-base text-muted">
         Describe a gesture as a string, like <code>'double-tap'</code> or <code>'tap tap hold+swipe-left'</code>, and
         get a callback. Touch, pen and mouse. Scrolling stays native wherever it can.
       </p>

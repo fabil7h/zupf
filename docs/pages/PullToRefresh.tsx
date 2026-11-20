@@ -58,7 +58,7 @@ function usePullToRefresh(
 }
 
 const Status = ({ status, extra }: { status: PullStatus; extra?: string }) => (
-  <pre class="preview-log">
+  <pre class="demo-log">
     status: {status}
     {extra && `  ·  ${extra}`}
   </pre>
@@ -160,9 +160,9 @@ function Basic() {
       description="Pull the list down and let go. Return a promise from `onRefresh` and the loading bar stays until it settles. `onPull` hands the progress to the bar; the indicator is plain markup you style in CSS (more styles below)."
       code={basicCode}
     >
-      <div class="ptr-demo">
+      <div class="phone-frame h-[420px]">
         <Bar />
-        <div ref={list} class={`ptr-demo-list ${inbox.class}`}>
+        <div ref={list} class="h-full overflow-auto bg-canvas">
           {view}
         </div>
       </div>
@@ -496,12 +496,12 @@ function BlogDemo({ style }: { style: IndicatorStyle }) {
   const { Indicator, Behind } = style;
   return (
     <>
-      <div class="ptr-demo ptr-demo-tall">
-        <div class="c-blog-scroller">
-          <header class="c-blog-sticky">
+      <div class="phone-frame h-[520px]">
+        <div class="h-full overflow-auto overscroll-y-contain bg-canvas text-fg">
+          <header class="sticky top-0 z-1 grid gap-3 border-b border-line bg-canvas px-4 pt-4 pb-3">
             <BlogHeader />
           </header>
-          <div class={`c-blog-posts-area ${style.area ?? ''}`}>
+          <div class={`relative bg-surface ${style.area ?? ''}`}>
             {Behind && <Behind />}
             {Indicator && <Indicator />}
             <div ref={content} class={blog.class}>
@@ -593,9 +593,9 @@ ${barJs}  onRefresh: async () => {
         css: `${baseCss('#metrics')}\n\n${barCss}`,
       }}
     >
-      <div class="ptr-demo ptr-demo-tall">
+      <div class="phone-frame h-[520px]">
         <Bar />
-        <div ref={content} class={`ptr-demo-list ${dashboard.class}`}>
+        <div ref={content} class="h-full overflow-auto bg-canvas">
           {view}
         </div>
       </div>
@@ -622,10 +622,13 @@ function Widget<S>({ kind, title }: { kind: ContentKind<S>; title: string }) {
   const { view, load } = useContent(kind, 900);
   const { status } = usePullToRefresh(content, { ...barOptions, onRefresh: load, threshold: 44, max: 96 });
   return (
-    <div class="ptr-widget-wrap">
-      <div class="widget ptr-widget" aria-label={title}>
+    <div class="grid justify-items-center gap-1.5">
+      <div
+        class="widget w-[200px] rounded-[20px] border border-line-strong bg-surface text-muted corner-round"
+        aria-label={title}
+      >
         <Bar />
-        <div ref={content} class={`widget-body ${kind.class}`}>
+        <div ref={content} class={`widget-body bg-canvas [scrollbar-width:none] ${kind.class ?? ''}`}>
           {view}
         </div>
       </div>
@@ -658,7 +661,7 @@ function Widgets() {
         css: `${widgetCss}\n\n${barCss}`,
       }}
     >
-      <div class="ptr-widgets">
+      <div class="flex flex-wrap justify-center gap-4">
         <Widget kind={quoteOfTheDay} title="Phrase of the day" />
         <Widget kind={stocks} title="Watchlist" />
       </div>
@@ -713,18 +716,18 @@ function TuningDemo({ options }: { options: Tuning }) {
   });
   return (
     <>
-      <div class="ptr-demo">
+      <div class="phone-frame h-[420px]">
         <div class="threshold-line" style={{ '--threshold': `${options.threshold ?? 64}px` }}>
           threshold
         </div>
         <div data-zupf-ptr-indicator>
           <span data-zupf-ptr-spinner />
         </div>
-        <div ref={list} class={`ptr-demo-list ${inbox.class}`}>
+        <div ref={list} class="h-full overflow-auto bg-canvas">
           {view}
         </div>
       </div>
-      <pre class="preview-log">
+      <pre class="demo-log">
         status: {status} · <span ref={readout}>{pullReadout(0, 0)}</span>
       </pre>
     </>
@@ -805,7 +808,7 @@ ptr.status; // 'idle' | 'pulling' | 'ready' | 'refreshing'`,
         css: basicCode.css,
       }}
     >
-      <div class="preview-actions">
+      <div class="flex flex-wrap justify-center gap-2">
         <button class="btn btn-primary" onClick={() => void ptr?.refresh()}>
           refresh()
         </button>
@@ -830,13 +833,13 @@ ptr.status; // 'idle' | 'pulling' | 'ready' | 'refreshing'`,
           mouse: {String(mouse)}
         </button>
       </div>
-      <div class="ptr-demo">
+      <div class="phone-frame h-[420px]">
         <Bar />
-        <div ref={list} class={`ptr-demo-list ${notifications.class}`}>
+        <div ref={list} class="h-full overflow-auto bg-canvas">
           {view}
         </div>
       </div>
-      <pre class="preview-log">{log.join('\n') || `status: ${status}`}</pre>
+      <pre class="demo-log">{log.join('\n') || `status: ${status}`}</pre>
     </Section>
   );
 }
@@ -874,7 +877,7 @@ function Nested() {
         html: `<div class="ptr-wrapper">
   ${barHtml}
   <div id="list">
-    <div class="carousel">…</div>
+    <div class="carousel scroll-px-3 px-3">…</div>
     <div class="inner-scroller">…</div>
     <canvas data-zupf-no-drag></canvas>
     …
@@ -887,28 +890,36 @@ ${nestedCss}
 ${barCss}`,
       }}
     >
-      <div class="ptr-demo">
+      <div class="phone-frame h-[420px]">
         <Bar />
-        <div ref={list} class="ptr-demo-list ptr-nested">
-          <div class="carousel">
+        <div ref={list} class="h-full overflow-auto bg-canvas flex flex-col gap-3 pt-3 *:shrink-0">
+          <div class="carousel scroll-px-3 px-3">
             {['Swipe', 'me', 'sideways', '→'].map((t) => (
-              <div key={t} class="ptr-card">
+              <div
+                key={t}
+                class="grid h-22 place-items-center rounded-2xl border border-line bg-surface font-medium text-fg"
+              >
                 {t}
               </div>
             ))}
           </div>
-          <div class="inner-scroller ptr-inner">
+          <div class="inner-scroller mx-3 rounded-xl border border-line px-3 py-2.5 text-[13px] text-fg">
             <strong>Inner scroller</strong>
             {Array.from({ length: 10 }, (_, i) => (
-              <p key={i}>Scroll me first. Line {i + 1}</p>
+              <p key={i} class="m-0 mt-1.5 text-muted">
+                Scroll me first. Line {i + 1}
+              </p>
             ))}
           </div>
-          <div class="ptr-no-drag" data-zupf-no-drag>
+          <div
+            class="mx-3 rounded-xl border border-line bg-[repeating-linear-gradient(45deg,transparent_0_8px,var(--color-surface)_8px_16px)] px-3 py-[18px] text-center text-[13px] text-muted"
+            data-zupf-no-drag
+          >
             data-zupf-no-drag
             <br />
             pulls never start here
           </div>
-          <div class={inbox.class}>{view}</div>
+          <div>{view}</div>
         </div>
       </div>
       <Status status={status} />
@@ -940,13 +951,15 @@ function DrawerList() {
   const { status } = usePullToRefresh(list, { ...barOptions, onRefresh: load });
   return (
     <>
-      <div class="ptr-sheet-header">
-        <h2 data-zupf-title>Notifications</h2>
-        <span class="ptr-sheet-status">{status}</span>
+      <div class="flex items-baseline justify-between px-5 pb-3">
+        <h2 class="m-0 text-[1.5em] font-bold" data-zupf-title>
+          Notifications
+        </h2>
+        <span class="text-xs text-muted">{status}</span>
       </div>
-      <div class="sheet-list">
+      <div class="sheet-list border-t border-line bg-surface">
         <Bar />
-        <div ref={list} class={`ptr-demo-list ${notifications.class}`} data-zupf-no-drag>
+        <div ref={list} class="h-full overflow-auto bg-canvas" data-zupf-no-drag>
           {view}
         </div>
       </div>
@@ -985,7 +998,7 @@ ${barJs}  onRefresh: loadNotifications,
         css: `${drawerCss}\n\n${barCss}`,
       }}
     >
-      <div class="preview-actions">
+      <div class="flex flex-wrap justify-center gap-2">
         <button ref={trigger} class="btn btn-primary">
           Open Drawer
         </button>
@@ -1015,7 +1028,7 @@ export const pullToRefreshToc = [
 export function PullToRefreshPage() {
   return (
     <>
-      <p class="lead">
+      <p class="text-base text-muted">
         Pull down at the top of any scroller to refresh. It follows the finger, ignores sideways swipes and leaves
         native scrolling alone. Demos here enable mouse pulls so you can try them on desktop.
       </p>

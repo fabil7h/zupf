@@ -2,10 +2,9 @@ import { useRef, useState } from 'preact/hooks';
 import type { Sheet, SheetOptions } from '../../src';
 import { exampleCode, resolveOptions } from '../codegen';
 import type { Example as ExampleDef } from '../examples';
-import { href, useDocRoute } from '../router';
 import { CodeBlock, type CodeTab } from './CodeBlock';
 import { Drawer, useSheetState } from './Drawer';
-import { Icon } from './Icon';
+import { SectionHeading, Segmented } from './Section';
 
 /** Example markup is plain HTML, so the code tab shows exactly what is rendered. */
 const Markup = ({ html }: { html: string }) => (
@@ -46,7 +45,7 @@ function ExampleDrawer({
 
 function LiveState({ sheet }: { sheet: Sheet | null }) {
   const state = useSheetState(sheet);
-  return <pre class="preview-log">{state && JSON.stringify(state, null, 2)}</pre>;
+  return <pre class="demo-log">{state && JSON.stringify(state, null, 2)}</pre>;
 }
 
 /** Apply the selected variant: its options come first so they read naturally in the code sample. */
@@ -57,7 +56,6 @@ function withVariant(ex: ExampleDef, index: number): ExampleDef {
 }
 
 export function Example({ ex: base }: { ex: ExampleDef }) {
-  const { slug } = useDocRoute();
   const trigger = useRef<HTMLButtonElement>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [variant, setVariant] = useState(0);
@@ -71,24 +69,13 @@ export function Example({ ex: base }: { ex: ExampleDef }) {
 
   return (
     <section id={ex.id}>
-      <h2>
-        <a href={href(slug, ex.id)}>
-          {ex.title}
-          <Icon name="link" class="anchor-icon" />
-        </a>
-      </h2>
+      <SectionHeading id={ex.id} title={ex.title} />
       <p dangerouslySetInnerHTML={{ __html: ex.description }} />
-      <div class="preview">
+      <div class="demo-preview">
         {base.variants && (
-          <div class="segmented" role="radiogroup" aria-label="Variant">
-            {base.variants.map((v, i) => (
-              <button key={v.label} role="radio" aria-checked={i === variant} onClick={() => setVariant(i)}>
-                {v.label}
-              </button>
-            ))}
-          </div>
+          <Segmented labels={base.variants.map((v) => v.label)} value={variant} onChange={setVariant} />
         )}
-        <div class="preview-actions">
+        <div class="flex flex-wrap justify-center gap-2">
           {!ex.noTrigger && (
             <button class="btn btn-primary" ref={trigger}>
               Open Drawer

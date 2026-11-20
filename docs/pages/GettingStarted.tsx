@@ -145,13 +145,13 @@ export function GettingStarted() {
   const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
-      <p class="lead">
+      <p class="text-base text-muted">
         Three touch interactions that feel native, for any framework. You write the markup, zupf adds the gestures,
         physics and accessibility. Zero dependencies, about 13 KB gzipped.
       </p>
 
       <h2 id="overview">What you can build</h2>
-      <ul>
+      <ul class="my-[1em] list-disc pl-10">
         <li>
           <a href={href('drawer')}>
             <strong>Drawer</strong>
@@ -196,8 +196,8 @@ export function GettingStarted() {
           { label: 'JavaScript', lang: 'js', code: js },
         ]}
       />
-      <div class="preview">
-        <div class="preview-actions">
+      <div class="demo-preview">
+        <div class="flex flex-wrap justify-center gap-2">
           <button class="btn btn-primary" ref={trigger}>
             Open Drawer
           </button>

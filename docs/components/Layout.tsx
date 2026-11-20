@@ -15,12 +15,17 @@ export function Nav() {
   return (
     <>
       {groups.map((g) => (
-        <div class="nav-group" key={g}>
-          <div class="nav-title">{g}</div>
+        <div class="[&+&]:mt-6" key={g}>
+          <div class="mb-2 text-xs font-semibold text-fg">{g}</div>
           {pages
             .filter((p) => p.group === g)
             .map((p) => (
-              <a key={p.slug} href={href(p.slug)} aria-current={p.slug === current ? 'page' : undefined}>
+              <a
+                key={p.slug}
+                class="guide-link"
+                href={href(p.slug)}
+                aria-current={p.slug === current ? 'page' : undefined}
+              >
                 {p.title}
               </a>
             ))}
@@ -32,7 +37,7 @@ export function Nav() {
 
 function Logo() {
   return (
-    <a href={href('')} class="logo">
+    <a href={href('')} class="inline-flex items-center gap-2 font-semibold tracking-[-0.01em]">
       zupf
     </a>
   );
@@ -48,16 +53,18 @@ export function Header({ page }: { page: Page }) {
   useEffect(() => mobileNav?.close(), [slug, anchor]);
 
   return (
-    <header class="topbar">
-      <div class="topbar-inner">
-        <button ref={menu} class="icon-btn menu" aria-label="Open navigation">
+    <header class="sticky top-0 z-10 h-14 border-b border-line bg-canvas/85 touch:bg-canvas fine-pointer:backdrop-blur-sm">
+      <div class="mx-auto flex h-full w-full max-w-[1280px] items-center gap-4 pr-12 pl-6 max-md:gap-2 max-md:px-3">
+        <button ref={menu} class="icon-button md:hidden" aria-label="Open navigation">
           <Icon name="list" />
         </button>
         <Logo />
-        <span class="tagline">Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.</span>
-        <div class="topbar-actions">
+        <span class="text-[13px] text-muted max-md:hidden">
+          Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.
+        </span>
+        <div class="ml-auto flex gap-1">
           <a
-            class="icon-btn github-btn"
+            class="icon-button fine-pointer:hover:[&_svg]:motion-safe:animate-wave"
             href="https://github.com/fabil7h/zupf"
             aria-label="GitHub repository"
             title="GitHub"
@@ -74,10 +81,11 @@ export function Header({ page }: { page: Page }) {
         trigger={menu}
         noHandle
         onReady={setMobileNav}
+        class="overflow-y-auto px-5 py-4 [--zupf-size:280px]"
       >
-        <div class="mobile-nav-head">
+        <div class="pt-1 pb-5">
           <Logo />
-          <span class="mobile-nav-tagline">
+          <span class="mt-1 block text-[13px] text-muted">
             Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.
           </span>
         </div>
@@ -93,19 +101,19 @@ export function Pager({ page }: { page: Page }) {
   const prev = pages[i - 1];
   const next = pages[i + 1];
   return (
-    <nav class="pager">
+    <nav class="mt-16 flex justify-between gap-4">
       {prev ? (
-        <a href={href(prev.slug)} class="pager-prev">
-          <span>Previous</span>
-          <strong>{prev.title}</strong>
+        <a href={href(prev.slug)} class="pager-link fine-pointer:hover:-translate-x-0.5">
+          <span class="text-xs font-normal text-muted">Previous</span>
+          <strong class="inline-flex items-center gap-1.5 font-medium">{prev.title}</strong>
         </a>
       ) : (
         <span />
       )}
       {next && (
-        <a href={href(next.slug)} class="pager-next">
-          <span>Next</span>
-          <strong>{next.title}</strong>
+        <a href={href(next.slug)} class="pager-link ml-auto text-right fine-pointer:hover:translate-x-0.5">
+          <span class="text-xs font-normal text-muted">Next</span>
+          <strong class="inline-flex items-center justify-end gap-1.5 font-medium">{next.title}</strong>
         </a>
       )}
     </nav>
@@ -177,7 +185,7 @@ export function useActiveSection(page: Page) {
 
     measure();
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleMeasure);
-    const article = document.querySelector('.content > article');
+    const article = document.querySelector('main > article');
     if (article) resizeObserver?.observe(article);
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', scheduleMeasure);
@@ -207,10 +215,15 @@ export function Toc({ page }: { page: Page }) {
 
   if (examples.length < 2) return null;
   return (
-    <aside class="toc">
-      <div class="nav-title">On this page</div>
+    <aside class="mt-6 block">
+      <div class="mb-2 text-xs font-semibold text-fg">On this page</div>
       {examples.map((e) => (
-        <a key={e.id} href={href(page.slug, e.id)} aria-current={e.id === activeId ? 'location' : undefined}>
+        <a
+          key={e.id}
+          class="guide-link"
+          href={href(page.slug, e.id)}
+          aria-current={e.id === activeId ? 'location' : undefined}
+        >
           {e.title}
         </a>
       ))}
