@@ -69,6 +69,32 @@ describe('DragGesture', () => {
     child.dispatchEvent(pointer('pointercancel'));
     expect(onEnd).toHaveBeenCalledWith(null, { distance: 0, velocity: 0 });
   });
+
+  it('ignores other pointers during a press', () => {
+    const { child, onStart, onMove, onEnd } = setup('bottom');
+    child.dispatchEvent(pointer('pointerdown', { clientX: 50, clientY: 300 }));
+    child.dispatchEvent(pointer('pointerdown', { pointerId: 2, clientX: 80, clientY: 100 }));
+    child.dispatchEvent(pointer('pointermove', { pointerId: 2, clientX: 80, clientY: 50 }));
+    child.dispatchEvent(pointer('pointerup', { pointerId: 2, clientX: 80, clientY: 50 }));
+    child.dispatchEvent(pointer('pointercancel', { pointerId: 2 }));
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(onMove).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
+
+    child.dispatchEvent(pointer('pointermove', { clientX: 50, clientY: 250 }));
+    expect(onMove).toHaveBeenLastCalledWith(expect.any(PointerEvent), 50);
+    child.dispatchEvent(pointer('pointerup', { clientX: 50, clientY: 250 }));
+    expect(onEnd).toHaveBeenCalledOnce();
+  });
+
+  it('recovers from a press that lost its release', () => {
+    const { child, onStart, onEnd } = setup('bottom');
+    child.dispatchEvent(pointer('pointerdown', { isPrimary: true, clientX: 50, clientY: 300 }));
+    // No pointerup / pointercancel arrives; the next touch starts a new press.
+    child.dispatchEvent(pointer('pointerdown', { isPrimary: true, pointerId: 3, clientX: 50, clientY: 300 }));
+    expect(onEnd).toHaveBeenCalledWith(null, { distance: 0, velocity: 0 });
+    expect(onStart).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('isScrolledAway', () => {

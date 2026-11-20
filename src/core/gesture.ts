@@ -49,6 +49,7 @@ export class DragGesture {
   #axisLocked = false;
   #last: PointerEvent | null = null;
   #captureEl: Element | null = null;
+  #pointerId = 0;
 
   constructor(el: HTMLElement, options: DragGestureOptions) {
     this.el = el;
@@ -57,10 +58,10 @@ export class DragGesture {
     this.#cleanup = chain(
       on(el, 'pointerdown', this.#onDown),
       on(el, 'pointermove', this.#onMove),
-      on(el, 'pointerup', (e) => this.#end(e)),
+      on(el, 'pointerup', (e) => this.release(e)),
       on(el, 'pointerout', this.#onOut),
       on(el, 'contextmenu', () => this.#last && this.#end(this.#last)),
-      on(el, 'pointercancel', () => this.#end(null)),
+      on(el, 'pointercancel', (e) => this.#isOther(e) || this.#end(null)),
       handle && on(handle, 'pointerdown', (e) => this.#handleOnly && this.#press(e)),
       handle && on(handle, 'pointermove', (e) => this.#handleOnly && this.#move(e)),
     );
@@ -73,7 +74,7 @@ export class DragGesture {
 
   /** End the current press as if the pointer was released with `e` (e.g. a pointerup seen elsewhere). */
   release(e: PointerEvent | null): void {
-    this.#end(e);
+    if (!e || !this.#isOther(e)) this.#end(e);
   }
 
   /** Stop tracking the current press without calling `onEnd`. */
@@ -94,13 +95,30 @@ export class DragGesture {
     return isVertical(this.#o.direction()) ? e.pageY : e.pageX;
   }
 
+  /** Events of other pointers (e.g. a second finger) don't affect the current press. */
+  #isOther(e: PointerEvent) {
+    return this.#pressed && e.pointerId !== this.#pointerId;
+  }
+
+  /**
+   * Whether `e` may start a new press. A second finger can't, but a new primary pointer while still pressed
+   * means the old press lost its pointerup / pointercancel (e.g. an iOS system gesture): cancel it and restart.
+   */
+  #canClaim(e: PointerEvent) {
+    if (!this.#pressed) return true;
+    if (!e.isPrimary) return false;
+    this.#end(null);
+    return true;
+  }
+
   #onDown = (e: PointerEvent) => {
-    if (this.#handleOnly) return;
+    if (this.#handleOnly || !this.#canClaim(e)) return;
     this.#startXY = { x: e.pageX, y: e.pageY };
     this.#press(e);
   };
 
   #onMove = (e: PointerEvent) => {
+    if (this.#isOther(e)) return;
     this.#last = e;
     if (this.#handleOnly || !this.#startXY) return;
     const delta = { x: e.pageX - this.#startXY.x, y: e.pageY - this.#startXY.y };
@@ -111,7 +129,7 @@ export class DragGesture {
 
   /** Treat the pointer leaving the element (without capture) as a release. */
   #onOut = (e: PointerEvent) => {
-    if (this.#captureEl?.hasPointerCapture?.(e.pointerId)) return;
+    if (this.#isOther(e) || this.#captureEl?.hasPointerCapture?.(e.pointerId)) return;
     if (e.relatedTarget instanceof Node && this.el.contains(e.relatedTarget)) return;
     this.#end(this.#last);
   };
@@ -135,9 +153,10 @@ export class DragGesture {
 
   #press(e: PointerEvent) {
     const target = e.target;
-    if (!(target instanceof Element) || !this.el.contains(target)) return;
+    if (!this.#canClaim(e) || !(target instanceof Element) || !this.el.contains(target)) return;
     if (this.#o.canStart && !this.#o.canStart(e as PointerEvent & { target: Element })) return;
     this.#pressed = true;
+    this.#pointerId = e.pointerId;
     this.#startTime = Date.now();
     try {
       this.#captureEl = target;
@@ -150,7 +169,7 @@ export class DragGesture {
   }
 
   #move(e: PointerEvent) {
-    if (!this.#pressed) return;
+    if (!this.#pressed || this.#isOther(e)) return;
     this.#o.onMove?.(e, (this.#start - this.#axisPos(e)) * directionSign(this.#o.direction()));
   }
 
