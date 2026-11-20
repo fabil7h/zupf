@@ -146,31 +146,37 @@ export function GettingStarted() {
   return (
     <>
       <p class="lead">
-        zupf is a small toolkit for touch interactions that works with any framework: a drawer (bottom sheet),
-        pull-to-refresh and a gesture recognizer. The drawer is a port of{' '}
-        <a href="https://github.com/emilkowalski/vaul">vaul</a> without the React dependency. It has no dependencies, is
-        about 13 KB gzipped, and is accessible by default.
+        Three touch interactions that feel native, for any framework. You write the markup, zupf adds the gestures,
+        physics and accessibility. Zero dependencies, about 13 KB gzipped.
       </p>
 
-      <h2 id="overview">What's in the box</h2>
+      <h2 id="overview">What you can build</h2>
       <ul>
         <li>
-          <a href={href('drawer')}>Drawer</a>: snap points, four directions, nested sheets, scaled background, non-modal
-          mode and iOS Safari fixes.
+          <a href={href('drawer')}>
+            <strong>Drawer</strong>
+          </a>
+          : bottom sheets with <a href={href('drawer', 'snap')}>snap points</a>, a{' '}
+          <a href={href('drawer', 'scaled')}>scaled background</a> like iOS,{' '}
+          <a href={href('drawer', 'nested')}>nested sheets</a>, side panels and maps-style{' '}
+          <a href={href('drawer', 'snap-nonmodal')}>non-modal sheets</a>. Based on{' '}
+          <a href="https://github.com/emilkowalski/vaul">vaul</a>, rewritten without React or Radix.
         </li>
         <li>
-          <a href={href('pull-to-refresh')}>Pull to refresh</a>: the drawer's gesture handling on any scrollable list,
-          with a customizable indicator.
+          <a href={href('pull-to-refresh')}>
+            <strong>Pull to refresh</strong>
+          </a>
+          : on any scroller, even <a href={href('pull-to-refresh', 'drawer')}>inside a drawer</a>, with an{' '}
+          <a href={href('pull-to-refresh', 'blog')}>indicator you style in CSS</a>.
         </li>
         <li>
-          <a href={href('gestures')}>Gestures</a>: taps, long presses, swipes and custom sequences like{' '}
-          <code>tap tap hold+swipe-left</code> on one element.
+          <a href={href('gestures')}>
+            <strong>Gestures</strong>
+          </a>
+          : <a href={href('gestures', 'list')}>swipe actions</a> in lists, double taps, long presses and{' '}
+          <a href={href('gestures', 'custom')}>custom sequences</a> like <code>tap tap hold+swipe-up</code>.
         </li>
       </ul>
-      <p>
-        Each one is a plain function that takes elements or selectors, so you render the markup and zupf adds the
-        behavior.
-      </p>
 
       <h2 id="installation">Installation</h2>
       <CodeBlock
@@ -182,11 +188,8 @@ export function GettingStarted() {
         ]}
       />
 
-      <h2 id="usage">Create a sheet</h2>
-      <p>
-        Write the markup yourself and point <code>createSheet</code> at it. zupf adds the gestures, animation, focus
-        management and ARIA attributes.
-      </p>
+      <h2 id="usage">Your first drawer</h2>
+      <p>Plain HTML plus one call. zupf wires up dragging, animation, focus trap, Esc and the ARIA attributes.</p>
       <CodeBlock
         tabs={[
           { label: 'HTML', lang: 'html', code: html },
@@ -212,28 +215,26 @@ export function GettingStarted() {
 
       <h2 id="styling">Styling</h2>
       <p>
-        The default stylesheet is optional. All its selectors use zero-specificity <code>:where()</code>, so your own
-        CSS always wins. For quick theming, set CSS variables:
+        The default stylesheet is optional and uses zero-specificity <code>:where()</code>, so your CSS always wins.
+        Theme it with variables:
       </p>
       <CodeBlock tabs={[{ lang: 'css', code: css }]} />
 
       <h2 id="more">Pull to refresh and gestures</h2>
       <p>
-        They ship in the same package. <code>createPullToRefresh</code> and <code>createGestures</code> follow the same
-        pattern as <code>createSheet</code>: pass elements, get an instance with <code>setOptions</code>,{' '}
-        <code>getState</code>, <code>subscribe</code> and <code>destroy</code>.
+        Same package, same pattern: pass elements, get an instance with <code>setOptions</code>, <code>getState</code>,{' '}
+        <code>subscribe</code> and <code>destroy</code>.
       </p>
       <CodeBlock tabs={[{ lang: 'js', code: more }]} />
       <p>
-        See <a href={href('pull-to-refresh')}>Pull to Refresh</a> and <a href={href('gestures')}>Gestures</a> for the
-        options and styling hooks.
+        Live demos and options: <a href={href('pull-to-refresh')}>Pull to Refresh</a>,{' '}
+        <a href={href('gestures')}>Gestures</a>.
       </p>
 
       <h2 id="frameworks">Frameworks</h2>
       <p>
-        Render the elements on every render; don't put them behind a condition. Create the sheet once the component
-        mounts, and destroy it when the component unmounts. These docs are built with Preact and use the Preact version
-        below.
+        Always render the elements (zupf toggles <code>hidden</code> itself), create the instance on mount and destroy
+        it on unmount. These docs use the Preact version.
       </p>
       <CodeBlock
         tabs={[
@@ -244,8 +245,7 @@ export function GettingStarted() {
         ]}
       />
       <p>
-        A sheet is a valid Svelte store, and <code>sheet.getState</code> / <code>sheet.subscribe</code> plug straight
-        into React's <code>useSyncExternalStore</code>.
+        A sheet is a valid Svelte store and plugs straight into React's <code>useSyncExternalStore</code>.
       </p>
     </>
   );

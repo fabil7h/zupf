@@ -93,7 +93,7 @@ function Taps() {
     <Section
       id="taps"
       title="Taps and long press"
-      description="Bind patterns by name. With `tap`, `double-tap` and `triple-tap` all bound, a tap waits `interval` ms for the next one, and a triple tap fires right away because nothing longer can follow. A long press fires while the finger is still down."
+      description="Bind patterns by name. A tap waits briefly in case a double tap follows; a long press fires while the finger is still down."
       code={{
         js: `import { createGestures } from 'zupf';
 
@@ -154,7 +154,7 @@ function Swipes() {
     <Section
       id="swipes"
       title="Swipes"
-      description="`swipe` matches any direction and the handler gets `e.direction`; `swipe-up` etc. match one. Tokens joined with `+` happen in one press, in order: `hold+swipe` is a long press followed by a swipe, and a turn mid-swipe adds a token. Tracking continues past the edge of the pad (pointer capture)."
+      description="`swipe` matches any direction (read `e.direction`), `swipe-up` etc. match one. `+` chains tokens within one press: `hold+swipe` is a long press then a swipe, and a turn mid-swipe adds a token."
       variants={swipeVariants.map((v) => v.label)}
       variant={variant}
       onVariant={setVariant}
@@ -202,7 +202,7 @@ const listModes = [
     label: 'Swipe actions',
     hint: 'Swipe an item left for actions, right to close. Double tap to star.',
     description:
-      'One instance on the list handles every item: find the item from `e.target`. Swiping left reveals the actions, swiping right closes them. Only horizontal swipes are bound, so `touch-action` stays `pan-y` and the list keeps scrolling natively.',
+      'Mail-app swipe actions with one instance for the whole list: find the item from `e.target`. Only horizontal swipes are bound, so the list still scrolls natively.',
     js: `import { createGestures } from 'zupf';
 
 const list = document.querySelector('#mails');
@@ -257,7 +257,7 @@ list.addEventListener('click', (e) => {
     label: 'Hold, then swipe',
     hint: 'Hold an item, then swipe left (delete) or right (archive). Double tap to star.',
     description:
-      "Swipes that come after a `hold` don't block scrolling at all, so the list scrolls natively in every direction. Only once a press holds does zupf keep the page still. While held, the row follows the pointer (plain `pointermove` and the `data-holding` hook) and snaps back if released before `swipeDistance`.",
+      'Swipes after a `hold` never block scrolling: the page only stays still once a press holds. While held, the row follows the pointer (plain `pointermove` plus the `data-holding` hook).',
     js: `import { createGestures } from 'zupf';
 
 const list = document.querySelector('#mails');
@@ -494,7 +494,7 @@ function InAList() {
   return (
     <Section
       id="list"
-      title="In a scrolling list"
+      title="Swipe actions in a list"
       description={mode.description}
       variants={listModes.map((m) => m.label)}
       variant={variant}
@@ -575,7 +575,7 @@ function CustomFlow() {
     <Section
       id="custom"
       title="Custom flows"
-      description="Any sequence works: let the app (or its users) define a secret gesture, an unlock flow or a shortcut. `subscribe` reports the presses so far, so you can show progress. A wrong press restarts the flow, and waiting longer than `interval` between presses gives up."
+      description="Any sequence is a pattern: secret gestures, unlock flows, power-user shortcuts. Type your own below. `subscribe` reports the presses so far, so you can show progress."
       code={{
         js: `import { createGestures } from 'zupf';
 
@@ -619,9 +619,9 @@ gestures.subscribe(({ pressed, steps }) => {
 
 export const gesturesToc = [
   { id: 'taps', title: 'Taps and long press' },
-  { id: 'swipes', title: 'Swipes' },
-  { id: 'list', title: 'In a scrolling list' },
+  { id: 'list', title: 'Swipe actions in a list' },
   { id: 'custom', title: 'Custom flows' },
+  { id: 'swipes', title: 'Swipes' },
   { id: 'patterns', title: 'Patterns' },
   { id: 'options', title: 'Options' },
 ];
@@ -630,13 +630,13 @@ export function GesturesPage() {
   return (
     <>
       <p class="lead">
-        Recognize taps, multi-taps, long presses, swipes and any sequence of them on one element, from a short pattern
-        string like <code>'double-tap'</code> or <code>'tap tap hold+swipe-left'</code>. Touch, pen and mouse all work.
+        Describe a gesture as a string, like <code>'double-tap'</code> or <code>'tap tap hold+swipe-left'</code>, and
+        get a callback. Touch, pen and mouse. Scrolling stays native wherever it can.
       </p>
       <Taps />
-      <Swipes />
       <InAList />
       <CustomFlow />
+      <Swipes />
       <section id="patterns">
         <h2>Patterns</h2>
         <p>

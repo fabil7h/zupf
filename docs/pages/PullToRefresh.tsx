@@ -99,7 +99,7 @@ function Basic() {
     <Section
       id="basic"
       title="Basic"
-      description="Scroll the list to the top and pull it down. Releasing past the threshold calls `onRefresh`."
+      description="Pull the list down and let go. Return a promise from `onRefresh` and the spinner stays until it settles."
       code={basicCode}
     >
       <div class="ptr-demo">
@@ -366,7 +366,7 @@ function Blog() {
     <Section
       id="blog"
       title="Indicator styles"
-      description="Switch the indicator above. The indicator is your own markup: zupf sets `data-state` (and `data-settling` while it slides back) plus `--zupf-ptr-progress` on it, so all of these are plain CSS. Theme the built-in spinner with variables, fill a ring with the progress, flip an arrow with a changing label, or drop the indicator (`indicator: null`) and reveal a panel behind the content. In this blog only the posts move: the title and topic chips stay in a sticky header that is part of the scrolling page, so the indicator slides out from under it."
+      description="The indicator is your own markup, styled in plain CSS: zupf sets `data-state` and `--zupf-ptr-progress` on it. Switch styles above, from a themed spinner to a progress ring or a panel revealed behind the posts (`indicator: null`). The sticky header stays put; only the posts move."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#posts',
@@ -414,7 +414,7 @@ function Dashboard() {
     <Section
       id="dashboard"
       title="Dashboard"
-      description="Anything scrollable can be pulled, not only lists. Here a refresh reloads the whole dashboard: the numbers, chart and orders are replaced instead of new items being added on top."
+      description="Anything scrollable can be pulled, not only lists. Here a refresh replaces the whole dashboard."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#metrics',
@@ -493,7 +493,7 @@ function Widgets() {
     <Section
       id="widgets"
       title="Small containers"
-      description="Each widget has its own instance. In small containers, scale `threshold`, `max` and the indicator size down with the container. Give the content `overflow: auto` so it is its own scroller even when everything fits; otherwise the page's scroll position decides."
+      description="One instance per widget. Scale `threshold`, `max` and the indicator size down with the container, and give the content `overflow: auto` so it is its own scroller."
       code={{
         js: `for (const body of document.querySelectorAll('.widget-body')) {
   createPullToRefresh({
@@ -590,7 +590,7 @@ function Tuning() {
     <Section
       id="tuning"
       title="Threshold and feel"
-      description="`threshold` is how far the content must be pulled to refresh. The pull follows the finger at first, then gets stiffer as it approaches `max`. `refreshingOffset` is where the content rests while refreshing, and `duration` / `easing` shape the settle animation. `onPull` reports every frame."
+      description="`threshold`: how far to pull before release refreshes. `max`: where resistance tops out. `refreshingOffset`: where the content rests while loading. `duration` / `easing`: the settle animation. `onPull` reports every frame."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#list',
@@ -637,7 +637,7 @@ function Api() {
     <Section
       id="api"
       title="Controlling it"
-      description="`refresh()` runs a refresh from code (it resolves when done). `setOptions()` changes options at runtime, e.g. `disabled` while something else is loading. Mouse pulls are off by default (`mouse: false`): enable them here to try it on desktop. `subscribe()` reports every status change."
+      description="`refresh()` runs one from code. `setOptions()` changes options at runtime, e.g. `disabled`. Mouse pulls are off by default: toggle them here. `subscribe()` reports every status change."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#list',
@@ -719,7 +719,7 @@ function Nested() {
     <Section
       id="nested"
       title="Nested content"
-      description="Gestures inside the list keep working. Sideways swipes stay with the carousel. An inner scroll area must be scrolled to its own top before a pull starts from inside it. `[data-zupf-no-drag]` opts an area out completely, like it does for the drawer."
+      description="Carousels keep their sideways swipes, inner scrollers scroll to their own top first, and `[data-zupf-no-drag]` opts an area out completely."
       code={{
         js: basicCode.js,
         html: `<div class="ptr-wrapper">
@@ -815,7 +815,7 @@ function InDrawer() {
     <Section
       id="drawer"
       title="In a drawer"
-      description="Both use the same gestures, so put `[data-zupf-no-drag]` on the list: pulling it down then refreshes instead of closing the sheet, and the handle and header still drag the sheet."
+      description="Put `[data-zupf-no-drag]` on the list: pulling it refreshes, while the handle and header still drag the sheet."
       code={{
         js: `import { createSheet, createPullToRefresh } from 'zupf';
 import 'zupf/style.css';
@@ -857,12 +857,12 @@ createPullToRefresh({ content: '#sheet-list', onRefresh: loadNotifications });`,
 export const pullToRefreshToc = [
   { id: 'basic', title: 'Basic' },
   { id: 'blog', title: 'Indicator styles' },
+  { id: 'drawer', title: 'In a drawer' },
   { id: 'dashboard', title: 'Dashboard' },
   { id: 'widgets', title: 'Small containers' },
+  { id: 'nested', title: 'Nested content' },
   { id: 'tuning', title: 'Threshold and feel' },
   { id: 'api', title: 'Controlling it' },
-  { id: 'nested', title: 'Nested content' },
-  { id: 'drawer', title: 'In a drawer' },
   { id: 'options', title: 'Options' },
 ];
 
@@ -870,18 +870,17 @@ export function PullToRefreshPage() {
   return (
     <>
       <p class="lead">
-        Pull a scrolled-to-top list down to refresh it. It uses the drawer's gesture handling: it follows the finger,
-        ignores sideways swipes and leaves native scrolling alone everywhere else. Mouse pulls are off by default, but
-        most demos here turn them on so you can try them on desktop.
+        Pull down at the top of any scroller to refresh. It follows the finger, ignores sideways swipes and leaves
+        native scrolling alone. Demos here enable mouse pulls so you can try them on desktop.
       </p>
       <Basic />
       <Blog />
+      <InDrawer />
       <Dashboard />
       <Widgets />
+      <Nested />
       <Tuning />
       <Api />
-      <Nested />
-      <InDrawer />
       <section id="options">
         <h2>Options</h2>
         <Table
