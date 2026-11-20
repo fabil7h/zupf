@@ -1,0 +1,10 @@
+{
+  // Library sources: declarations are emitted by Oxc, which requires isolated declarations.
+  // Editors pick up this nearest tsconfig for files in src/.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "isolatedDeclarations": true,
+    "types": []
+  },
+  "include": ["."]
+}
