@@ -1,13 +1,21 @@
 # zupf
 
-A framework-agnostic, customizable drawer / bottom sheet, plus pull-to-refresh built on the same gestures and a recognizer for taps, long presses, swipes and custom gesture sequences. The drawer is ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
+Native-feeling bottom sheets, pull-to-refresh and gestures for the web. Any framework (or none), zero dependencies, about 13 KB gzipped. You write the markup, zupf adds the gestures, physics and accessibility.
 
-- Zero dependencies, about 13 KB gzipped
-- Works with plain HTML, React, Vue, Svelte, Solid, Lit and others: you render the markup, zupf adds the behavior
-- Snap points, four directions, nested sheets, scaled background, non-modal mode, handle-only dragging
-- Built-in accessibility: `role="dialog"`, focus trap, focus restore, Esc, outside press, `inert` background, scroll lock
-- Includes vaul's iOS Safari fixes: keyboard repositioning, `position: fixed` body, and blocking scroll on touch
-- Unstyled-friendly default CSS: every rule uses zero-specificity `:where()`, and theming is done with CSS variables
+- **Drawer**: snap points, iOS-style scaled background, nested sheets, any edge, maps-style non-modal mode. Based on [vaul](https://github.com/emilkowalski/vaul), rewritten without React or Radix.
+- **Pull to refresh**: on any scroller, even inside a drawer, with an indicator you style in plain CSS.
+- **Gestures**: swipe actions, double taps, long presses and custom sequences like `'tap tap hold+swipe-up'`.
+- **Accessible**: `role="dialog"`, focus trap and restore, Esc, outside press, `inert` background, scroll lock.
+- **Mobile-proof**: vaul's iOS Safari fixes for the virtual keyboard, `position: fixed` body and scroll bleed.
+- **Easy to theme**: zero-specificity `:where()` default CSS and CSS variables.
+
+```js
+import { createSheet, createPullToRefresh, createGestures } from 'zupf';
+
+createSheet({ content: '#sheet', trigger: '#open', snapPoints: [0.5, 1] });
+createPullToRefresh({ content: '#feed', onRefresh: () => loadNewPosts() });
+createGestures({ target: '#photo', gestures: { 'double-tap': () => like() } });
+```
 
 ## Install
 
@@ -20,7 +28,7 @@ import { createSheet } from 'zupf';
 import 'zupf/style.css'; // optional defaults
 ```
 
-## Usage
+## Drawer
 
 ```html
 <div data-zupf-wrapper><!-- your app (only needed for scaleBackground) --></div>

@@ -2,12 +2,13 @@
   "name": "zupf",
   "version": "0.1.0",
   "private": true,
-  "description": "Framework-agnostic, customizable drawer / bottom sheet and pull-to-refresh. Drawer is a port of vaul.",
+  "description": "Native-feeling drawer / bottom sheet, pull-to-refresh and gestures for any framework. Drawer based on vaul.",
   "keywords": [
     "bottom-sheet",
     "dialog",
     "drawer",
     "framework-agnostic",
+    "gestures",
     "pull-to-refresh",
     "sheet",
     "vanilla"
