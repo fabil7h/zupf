@@ -6,7 +6,6 @@ import { Header, Nav, Pager, Toc, useActiveSection } from './components/Layout';
 import type { Page } from './examples';
 import { pages } from './pages';
 import { useDocRoute } from './router';
-import './docs.css';
 
 function PageView({ page }: { page: Page }) {
   const { anchor } = useDocRoute();
