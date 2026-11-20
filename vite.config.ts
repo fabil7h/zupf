@@ -45,7 +45,7 @@ export default defineConfig({
     minify: true,
     sourcemap: true,
     publint: true,
-    copy: [{ from: 'src/style.css', to: 'dist' }],
+    copy: [{ from: 'src/drawer/style.css', to: 'dist' }],
   },
 
   // Oxlint

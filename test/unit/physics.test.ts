@@ -5,7 +5,7 @@ import {
   resolveSnapRelease,
   snapFadeProgress,
   overlayOpacityAt,
-} from '../../src/physics';
+} from '../../src/drawer/physics';
 
 const size = { width: 400, height: 1000 };
 

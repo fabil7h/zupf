@@ -7,6 +7,8 @@ import {
   directionSign,
   getTranslate,
   isInput,
+  isIOS,
+  isMobileFirefox,
   isVertical,
   noop,
   on,
@@ -14,9 +16,8 @@ import {
   translate,
   uid,
   type Cleanup,
-} from './helpers';
+} from '../shared';
 import { getSnapOffsets, overlayOpacityAt, resolveRelease, resolveSnapRelease, snapFadeProgress } from './physics';
-import { isIOS, isMobileFirefox } from './browser';
 import { preventScroll } from './prevent-scroll';
 import { restorePositionFixed, setPositionFixed } from './position-fixed';
 import { lockScroll } from './scroll-lock';

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test';
 import { commands, userEvent } from 'vite-plus/test/browser';
 import { createSheet, type Sheet, type SheetOptions } from '../../src';
-import '../../src/style.css';
+import '../../src/drawer/style.css';
 
 const sheets: Sheet[] = [];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

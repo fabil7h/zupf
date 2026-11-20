@@ -1,5 +1,4 @@
-import { chain, isInput, on, type Cleanup } from './helpers';
-import { isIOS } from './browser';
+import { chain, isInput, isIOS, on, type Cleanup } from '../shared';
 
 const KEYBOARD_BUFFER = 24;
 

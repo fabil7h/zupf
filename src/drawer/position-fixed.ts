@@ -1,5 +1,5 @@
 // On Safari, fixing the body while a sheet is open prevents toolbar and scroll-related jumps.
-import { isSafari } from './browser';
+import { isSafari } from '../shared';
 
 let previous: Record<string, string> | null = null;
 let lastUrl = typeof window !== 'undefined' ? window.location.href : '';

@@ -1,5 +1,5 @@
 // Ref-counted body scroll lock with scrollbar-gap compensation (replaces react-remove-scroll).
-import type { Cleanup } from './helpers';
+import type { Cleanup } from '../shared';
 
 let count = 0;
 let restore: Cleanup | undefined;

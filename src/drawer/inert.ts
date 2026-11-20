@@ -1,6 +1,6 @@
 // Marks everything outside `keep` as `inert` (non-interactive + hidden from assistive tech).
 // Ref-counted per element so stacked/nested sheets restore correctly.
-import type { Cleanup } from './helpers';
+import type { Cleanup } from '../shared';
 
 const counts = new WeakMap<Element, number>();
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'META', 'NOSCRIPT']);
