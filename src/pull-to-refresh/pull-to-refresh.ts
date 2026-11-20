@@ -8,6 +8,7 @@ import {
   on,
   resolveElement,
   stripUndefined,
+  Timers,
   type Cleanup,
 } from '../core';
 import { pullOffset, pullProgress } from './physics';
@@ -111,7 +112,7 @@ export class PullToRefresh {
   #offset = 0;
   #touchStart: { x: number; y: number } | null = null;
   #suppressClick = false;
-  #settleTimer: ReturnType<typeof setTimeout> | undefined;
+  #timers = new Timers<'settle' | 'suppressClick'>();
   #inFlight: Promise<void> | null = null;
   /** Indicator attributes set by zupf (not by the markup), removed on destroy. */
   #addedAttrs: string[] = [];
@@ -172,7 +173,7 @@ export class PullToRefresh {
       on(content, 'touchstart', this.#onTouchStart, { passive: true }),
       on(content, 'touchmove', this.#onTouchMove, { passive: false }),
       on(content, 'click', this.#onClick, true),
-      () => clearTimeout(this.#settleTimer),
+      () => this.#timers.dispose(),
     );
   }
 
@@ -293,7 +294,7 @@ export class PullToRefresh {
     // A mouse pull ends with a click on whatever was pressed; swallow it.
     if (this.#offset > 0) {
       this.#suppressClick = true;
-      setTimeout(() => (this.#suppressClick = false), 0);
+      this.#timers.set('suppressClick', () => (this.#suppressClick = false), 0);
     }
     // `refresh()` rejects with `onRefresh`'s error; nobody awaits it here, so report it like an event listener error.
     if (canRefresh && this.#state.status === 'ready') this.refresh().catch(report);
@@ -307,7 +308,7 @@ export class PullToRefresh {
 
   /** A new pull or refresh interrupts sliding back to rest. */
   #stopSettling() {
-    clearTimeout(this.#settleTimer);
+    this.#timers.clear('settle');
     this.indicator?.removeAttribute('data-settling');
   }
 
@@ -324,12 +325,15 @@ export class PullToRefresh {
     const refreshed = this.#state.status === 'refreshing';
     this.indicator?.setAttribute('data-settling', refreshed ? 'refreshed' : 'cancelled');
     this.#render(0, true, false);
-    clearTimeout(this.#settleTimer);
-    this.#settleTimer = setTimeout(() => {
-      this.indicator?.removeAttribute('data-settling');
-      this.#setVars(0, 0);
-      css(this.content, { transition: '', transform: '' });
-    }, this.#o.duration);
+    this.#timers.set(
+      'settle',
+      () => {
+        this.indicator?.removeAttribute('data-settling');
+        this.#setVars(0, 0);
+        css(this.content, { transition: '', transform: '' });
+      },
+      this.#o.duration,
+    );
     this.#setStatus('idle');
   }
 

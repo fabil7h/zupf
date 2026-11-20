@@ -3,3 +3,4 @@ export type { Direction } from './types';
 export * from './helpers';
 export * from './browser';
 export * from './gesture';
+export * from './timers';

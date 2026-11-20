@@ -157,7 +157,7 @@ export class DragGesture {
     if (this.#o.canStart && !this.#o.canStart(e as PointerEvent & { target: Element })) return;
     this.#pressed = true;
     this.#pointerId = e.pointerId;
-    this.#startTime = Date.now();
+    this.#startTime = performance.now();
     try {
       this.#captureEl = target;
       target.setPointerCapture(e.pointerId);
@@ -179,7 +179,7 @@ export class DragGesture {
     if (!this.#pressed) return;
     this.#pressed = false;
     const moved = e ? this.#start - this.#axisPos(e) : 0;
-    const velocity = Math.abs(moved) / Math.max(Date.now() - this.#startTime, 1);
+    const velocity = Math.abs(moved) / Math.max(performance.now() - this.#startTime, 1);
     this.#o.onEnd?.(e, { distance: moved * directionSign(this.#o.direction()), velocity });
   }
 }

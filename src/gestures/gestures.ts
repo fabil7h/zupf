@@ -1,4 +1,4 @@
-import { chain, noop, on, resolveElement, stripUndefined, type Cleanup } from '../core';
+import { chain, noop, on, resolveElement, stripUndefined, Timers, type Cleanup } from '../core';
 import {
   formatPattern,
   matchPattern,
@@ -93,6 +93,7 @@ export class Gestures {
   /** Removes the `window` listeners that follow a press. */
   #untrack: Cleanup = noop;
   #destroyed = false;
+  #timers = new Timers<'hold' | 'interval' | 'suppressClick'>();
   /** Inline styles zupf overrides, as they were before: value and priority (`important`). */
   #savedStyles: Record<string, [string, string]> = {};
   /** Some binding uses `hold`. Otherwise a long press isn't a token: pressing slowly before a swipe still swipes. */
@@ -101,7 +102,6 @@ export class Gestures {
   // Sequence
   #done: Token[][] = [];
   #pending: Pending | null = null;
-  #intervalTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Press in progress
   #current: Token[] | null = null;
@@ -114,7 +114,6 @@ export class Gestures {
   #start = { x: 0, y: 0 };
   #anchor = { x: 0, y: 0 };
   #moved = false;
-  #holdTimer: ReturnType<typeof setTimeout> | undefined;
   #suppressClick = false;
   /** A gesture fired mid-press with a mouse: swallow the click that follows the release. */
   #suppressAfterPress = false;
@@ -143,10 +142,7 @@ export class Gestures {
       on(el, 'contextmenu', this.#onContextMenu),
       on(el, 'click', this.#onClick, true),
       () => this.#untrack(),
-      () => {
-        clearTimeout(this.#holdTimer);
-        clearTimeout(this.#intervalTimer);
-      },
+      () => this.#timers.dispose(),
     );
   }
 
@@ -186,7 +182,7 @@ export class Gestures {
     if (this.#destroyed) return;
     this.#pending = null;
     this.#resetSequence();
-    clearTimeout(this.#holdTimer);
+    this.#timers.clear('hold');
     if (this.#current) this.#dead = true;
     this.#emit();
   };
@@ -222,7 +218,7 @@ export class Gestures {
     }
     if (!e.isPrimary || (e.pointerType === 'mouse' && (!this.#o.mouse || e.button !== 0))) return;
 
-    clearTimeout(this.#intervalTimer);
+    this.#timers.clear('interval');
     this.#current = [];
     this.#dead = false;
     this.#moved = false;
@@ -233,8 +229,8 @@ export class Gestures {
     this.#start = this.#anchor = { x: e.clientX, y: e.clientY };
     this.el.setAttribute('data-pressed', '');
     this.#track();
-    clearTimeout(this.#holdTimer);
-    if (this.#usesHold) this.#holdTimer = setTimeout(this.#onHold, this.#o.holdTime);
+    if (this.#usesHold) this.#timers.set('hold', this.#onHold, this.#o.holdTime);
+    else this.#timers.clear('hold');
     this.#evaluate();
   };
 
@@ -309,11 +305,11 @@ export class Gestures {
   #startMoving() {
     if (this.#moved) return;
     this.#moved = true;
-    clearTimeout(this.#holdTimer);
+    this.#timers.clear('hold');
   }
 
   #endPress() {
-    clearTimeout(this.#holdTimer);
+    this.#timers.clear('hold');
     this.#untrack();
     this.#untrack = noop;
     this.#current = null;
@@ -373,12 +369,15 @@ export class Gestures {
       // Otherwise keep what completed earlier: it fires if the sequence goes no further.
       if (complete.length) this.#pending = { bindings: complete, event: this.#event() };
       if (!current) {
-        clearTimeout(this.#intervalTimer);
-        this.#intervalTimer = setTimeout(() => {
-          this.#flush();
-          this.#resetSequence();
-          this.#emit();
-        }, this.#o.interval);
+        this.#timers.set(
+          'interval',
+          () => {
+            this.#flush();
+            this.#resetSequence();
+            this.#emit();
+          },
+          this.#o.interval,
+        );
       }
     }
     this.#emit();
@@ -416,7 +415,7 @@ export class Gestures {
   }
 
   #resetSequence() {
-    clearTimeout(this.#intervalTimer);
+    this.#timers.clear('interval');
     this.#done = [];
   }
 
@@ -491,7 +490,7 @@ export class Gestures {
 
   #suppressNextClick() {
     this.#suppressClick = true;
-    setTimeout(() => (this.#suppressClick = false), 0);
+    this.#timers.set('suppressClick', () => (this.#suppressClick = false), 0);
   }
 
   #onClick = (e: MouseEvent) => {

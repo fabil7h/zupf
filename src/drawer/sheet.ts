@@ -16,6 +16,7 @@ import {
   on,
   resolveElement,
   stripUndefined,
+  Timers,
   translate,
   uid,
   type Cleanup,
@@ -185,6 +186,16 @@ const DEFAULTS: SheetBehavior = {
 
 const SCALE_DEFAULTS: Required<ScaleBackgroundOptions> = { offset: 26, radius: 8, translate: 14, background: 'black' };
 const OPPOSITE_EDGE: Record<Direction, Direction> = { bottom: 'top', top: 'bottom', left: 'right', right: 'left' };
+type SheetTimer =
+  | 'animationEnd'
+  | 'close'
+  | 'handleCycle'
+  | 'handleLongPress'
+  | 'justReleased'
+  | 'nested'
+  | 'positionFixed'
+  | 'wrapper';
+
 const LONG_HANDLE_PRESS_TIMEOUT = 250;
 const DOUBLE_TAP_TIMEOUT = 120;
 /** Explicit user intents that close even when `dismissible` is false. */
@@ -207,8 +218,7 @@ export class Sheet {
   // lifecycle
   #hasBeenOpened = false;
   #closing = false;
-  #closeTimer: ReturnType<typeof setTimeout> | undefined;
-  #animEndTimer: ReturnType<typeof setTimeout> | undefined;
+  #timers = new Timers<SheetTimer>();
   #bindings: Cleanup = noop;
   #openEffects: Cleanup = noop;
   #modalEffects: Cleanup = noop;
@@ -216,8 +226,6 @@ export class Sheet {
   #wrapperOriginal: string | null = null;
   /** Visible part of the wrapper (wrapper-local px), measured when the sheet opens. */
   #wrapperViewport = { top: 0, bottom: 0, height: 0 };
-  #wrapperTimer: ReturnType<typeof setTimeout> | undefined;
-  #bodyBgTimer: ReturnType<typeof setTimeout> | undefined;
   #bodyBgOriginal: string | null = null;
   #returnFocus: HTMLElement | null = null;
   #lastFocusedInside: HTMLElement | null = null;
@@ -228,10 +236,10 @@ export class Sheet {
   #allowedToDrag = false;
   #draggedThisPress = false;
   #justReleased = false;
-  #openTime = 0;
-  #lastTimeDragPrevented = 0;
+  // performance.now() is small right after page load, so "never" must be -Infinity, not 0.
+  #openTime = -Infinity;
+  #lastTimeDragPrevented = -Infinity;
   #sheetSize = 0;
-  #nestedTimer: ReturnType<typeof setTimeout> | undefined;
 
   // snap points / keyboard
   #snapOffsets: number[] = [];
@@ -241,7 +249,6 @@ export class Sheet {
   #styledForKeyboard = false;
 
   // handle tap
-  #handleCloseTimer: number | undefined;
   #cancelHandleTap = false;
 
   constructor(options: SheetOptions) {
@@ -374,7 +381,7 @@ export class Sheet {
       if (!this.parent) restorePositionFixed();
     }
     this.#restoreWrapper(true);
-    [this.#closeTimer, this.#animEndTimer, this.#nestedTimer, this.#wrapperTimer].forEach((t) => clearTimeout(t));
+    this.#timers.dispose();
     this.#bindings();
     this.#listeners.clear();
     this.#destroyed = true;
@@ -450,11 +457,11 @@ export class Sheet {
       handle && on(handle, 'pointercancel', this.#cancelHandleInteraction),
       handle &&
         on(handle, 'pointerdown', () => {
-          this.#handleCloseTimer = window.setTimeout(() => (this.#cancelHandleTap = true), LONG_HANDLE_PRESS_TIMEOUT);
+          this.#timers.set('handleLongPress', () => (this.#cancelHandleTap = true), LONG_HANDLE_PRESS_TIMEOUT);
         }),
       ...this.triggers.map((t) => on(t, 'click', () => this.toggle('trigger'))),
       on(window, 'resize', this.#onResize),
-      () => clearTimeout(this.#handleCloseTimer),
+      () => this.#timers.clear('handleLongPress'),
     );
   }
 
@@ -476,7 +483,7 @@ export class Sheet {
 
   #openSheet(reason: ChangeReason, animate: boolean) {
     const { content, overlay } = this;
-    clearTimeout(this.#closeTimer);
+    this.#timers.clear('close');
     const wasClosing = this.#closing;
     this.#closing = false;
     this.#hasBeenOpened = true;
@@ -497,15 +504,14 @@ export class Sheet {
     this.#emit({ open: true });
     this.#settle(animate);
 
-    this.#openTime = Date.now();
+    this.#openTime = performance.now();
     this.#openEffects = this.#applyOpenEffects();
     this.#modalEffects = this.#applyModalEffects(true);
     this.#updatePreventScroll();
     if (this.parent) this.parent.#onNestedOpenChange(true);
 
     this.#o.onOpenChange?.(true, reason);
-    clearTimeout(this.#animEndTimer);
-    this.#animEndTimer = setTimeout(() => this.#o.onAnimationEnd?.(true), animate ? this.#o.duration : 0);
+    this.#timers.set('animationEnd', () => this.#o.onAnimationEnd?.(true), animate ? this.#o.duration : 0);
   }
 
   #closeSheet(reason: ChangeReason) {
@@ -528,14 +534,17 @@ export class Sheet {
     if (this.parent) this.parent.#onNestedOpenChange(false);
 
     this.#o.onOpenChange?.(false, reason);
-    clearTimeout(this.#animEndTimer);
-    clearTimeout(this.#closeTimer);
-    this.#closeTimer = setTimeout(() => {
-      this.#closing = false;
-      this.#hideImmediately();
-      this.#setActiveIndex(this.#initialSnapIndex());
-      this.#o.onAnimationEnd?.(false);
-    }, this.#o.duration);
+    this.#timers.clear('animationEnd');
+    this.#timers.set(
+      'close',
+      () => {
+        this.#closing = false;
+        this.#hideImmediately();
+        this.#setActiveIndex(this.#initialSnapIndex());
+        this.#o.onAnimationEnd?.(false);
+      },
+      this.#o.duration,
+    );
   }
 
   #hideImmediately() {
@@ -571,13 +580,16 @@ export class Sheet {
 
     if (!this.parent && !this.#o.noBodyStyles) {
       setPositionFixed();
-      if (!this.#o.modal) setTimeout(() => restorePositionFixed(this.#o.preventScrollRestoration), 500);
+      if (!this.#o.modal) {
+        this.#timers.set('positionFixed', () => restorePositionFixed(this.#o.preventScrollRestoration), 500);
+      }
     }
     this.#applyScaleBackground();
 
     return chain(
       () => (html.style.scrollBehavior = prevScrollBehavior),
       () => removeLayer(layer),
+      () => this.#timers.clear('positionFixed'),
       () => this.#restoreWrapper(false),
       on(document, 'keydown', (e) => {
         if (e.key === 'Escape' && this.#o.closeOnEscape && isTopLayer(layer) && !e.defaultPrevented) {
@@ -743,7 +755,7 @@ export class Sheet {
   #snapTo(index: number, animate = true) {
     const offset = this.#snapOffsets[index];
     if (offset === undefined) return;
-    if (index === this.#snapOffsets.length - 1) this.#openTime = Date.now();
+    if (index === this.#snapOffsets.length - 1) this.#openTime = performance.now();
     css(this.content, {
       transition: animate ? this.#transition('transform') : 'none',
       transform: translate(this.#o.direction, offset),
@@ -783,7 +795,7 @@ export class Sheet {
     if (typeof custom === 'boolean') return custom;
 
     const swipeAmount = getTranslate(this.content, o.direction);
-    const now = Date.now();
+    const now = performance.now();
 
     if (el.tagName === 'SELECT') return false;
     if (el.closest?.('[data-zupf-no-drag]')) return false;
@@ -804,7 +816,7 @@ export class Sheet {
 
     // Don't drag if any scrollable ancestor (up to the sheet) is scrolled away from the top.
     if (isScrolledAway(el, this.content)) {
-      this.#lastTimeDragPrevented = Date.now();
+      this.#lastTimeDragPrevented = performance.now();
       return false;
     }
     return true;
@@ -900,10 +912,14 @@ export class Sheet {
     if (velocity > 0.05) {
       // Prevent focusing an input right after a flick (keeps iOS scroll prevention off briefly).
       this.#justReleased = true;
-      setTimeout(() => {
-        this.#justReleased = false;
-        this.#updatePreventScroll();
-      }, 200);
+      this.#timers.set(
+        'justReleased',
+        () => {
+          this.#justReleased = false;
+          this.#updatePreventScroll();
+        },
+        200,
+      );
     }
     this.#stopDragging();
 
@@ -977,11 +993,11 @@ export class Sheet {
       this.#cancelHandleInteraction();
       return;
     }
-    window.setTimeout(() => this.#cycleSnapPoints(), DOUBLE_TAP_TIMEOUT);
+    this.#timers.set('handleCycle', () => this.#cycleSnapPoints(), DOUBLE_TAP_TIMEOUT);
   };
 
   #cancelHandleInteraction = () => {
-    clearTimeout(this.#handleCloseTimer);
+    this.#timers.clear('handleLongPress');
     this.#cancelHandleTap = false;
   };
 
@@ -1011,16 +1027,20 @@ export class Sheet {
     const d = this.#o.nestedDisplacement;
     const scale = open ? (window.innerWidth - d) / window.innerWidth : 1;
     const offset = open ? -d : 0;
-    clearTimeout(this.#nestedTimer);
+    this.#timers.clear('nested');
     css(this.content, { transition: this.#transition('transform'), transform: this.#nestedTransform(scale, offset) });
     if (!open) {
-      this.#nestedTimer = setTimeout(() => {
-        if (!this.#state.open) return;
-        const value = getTranslate(this.content, this.#o.direction) ?? 0;
-        css(this.content, { transition: 'none', transform: translate(this.#o.direction, value) });
-        // Snap sheets rest at an offset; restore it.
-        if (this.#hasSnapPoints) this.#settle(false);
-      }, this.#o.duration);
+      this.#timers.set(
+        'nested',
+        () => {
+          if (!this.#state.open) return;
+          const value = getTranslate(this.content, this.#o.direction) ?? 0;
+          css(this.content, { transition: 'none', transform: translate(this.#o.direction, value) });
+          // Snap sheets rest at an offset; restore it.
+          if (this.#hasSnapPoints) this.#settle(false);
+        },
+        this.#o.duration,
+      );
     }
   }
 
@@ -1098,8 +1118,7 @@ export class Sheet {
     const s = this.#scaleOptions;
     const wrapper = this.wrapper;
     if (!s || !wrapper) return;
-    clearTimeout(this.#wrapperTimer);
-    clearTimeout(this.#bodyBgTimer);
+    this.#timers.clear('wrapper');
 
     if (s.background && !this.#o.noBodyStyles) {
       if (this.#bodyBgOriginal === null) this.#bodyBgOriginal = document.body.style.background;
@@ -1133,8 +1152,7 @@ export class Sheet {
     };
     if (immediate || !wrapper || this.#wrapperOriginal === null) return finish();
     css(wrapper, { ...this.#wrapperStyles(1), transition: this.#wrapperTransition() });
-    this.#wrapperTimer = setTimeout(finish, this.#o.duration);
-    this.#bodyBgTimer = this.#wrapperTimer;
+    this.#timers.set('wrapper', finish, this.#o.duration);
   }
 
   // ───────────────────────────── keyboard / iOS ─────────────────────────────
