@@ -856,14 +856,15 @@ export class Sheet {
       content.setAttribute('data-dragging', '');
       this.#emit({ dragging: true });
     }
-    css(content, { transition: 'none' });
-    css(overlay, { transition: 'none' });
+    // Direct writes: this runs on every pointermove, so skip the helper's per-call allocations.
+    content.style.transition = 'none';
+    if (overlay) overlay.style.transition = 'none';
 
     if (snap) this.#dragSnapPoints(draggedDistance);
 
     if (towardsOpen && !snap) {
       const value = Math.min(-o.rubberband(draggedDistance), 0) * sign;
-      css(content, { transform: translate(o.direction, value) });
+      content.style.transform = translate(o.direction, value);
       return;
     }
 
@@ -871,14 +872,14 @@ export class Sheet {
     const fade = !snap || activeIndex === this.#fadeFromIndex || activeIndex === this.#fadeFromIndex - 1;
     if (fade) {
       if (this.parent) this.parent.#onNestedDrag(progress);
-      css(overlay, { opacity: String(1 - progress) });
+      if (overlay) overlay.style.opacity = String(1 - progress);
     }
 
     if (wrapper && this.#scaleOptions && this.#wrapperOriginal !== null) {
       css(wrapper, { ...this.#wrapperStyles(Math.min(Math.max(progress, 0), 1)), transition: 'none' });
     }
 
-    if (!snap) css(content, { transform: translate(o.direction, absDragged * sign) });
+    if (!snap) content.style.transform = translate(o.direction, absDragged * sign);
   }
 
   #dragSnapPoints(draggedDistance: number) {
@@ -890,7 +891,7 @@ export class Sheet {
     const lastOffset = this.#snapOffsets[this.#snapOffsets.length - 1];
     // Don't drag past the largest snap point.
     if (directionSign(d) === 1 ? value < lastOffset : value > lastOffset) return;
-    css(this.content, { transform: translate(d, value) });
+    this.content.style.transform = translate(d, value);
   }
 
   #cancelDrag() {
@@ -1066,10 +1067,16 @@ export class Sheet {
 
   // ───────────────────────────── scale background ─────────────────────────────
 
+  /** Resolved scale options, cached per `scaleBackground` value: read on every pointermove while dragging. */
+  #scaleCache: { source: unknown; value: Required<ScaleBackgroundOptions> } | null = null;
+
   get #scaleOptions(): Required<ScaleBackgroundOptions> | null {
     const s = this.#o.scaleBackground;
     if (!s) return null;
-    return { ...SCALE_DEFAULTS, ...(s === true ? {} : stripUndefined(s)) };
+    if (this.#scaleCache?.source !== s) {
+      this.#scaleCache = { source: s, value: { ...SCALE_DEFAULTS, ...(s === true ? {} : stripUndefined(s)) } };
+    }
+    return this.#scaleCache.value;
   }
 
   #scale() {

@@ -64,9 +64,12 @@ function preventScrollMobileSafari(): Cleanup {
   const scrollX = window.pageXOffset;
   const scrollY = window.pageYOffset;
   const html = document.documentElement;
+  // Each write below restyles/repaints the whole page, and this runs on every press of the sheet (it is released
+  // while pressed), so only touch the page when there is something to change.
   const prevPadding = html.style.paddingRight;
-  html.style.paddingRight = `${window.innerWidth - html.clientWidth}px`;
-  window.scrollTo(0, 0);
+  const gap = window.innerWidth - html.clientWidth;
+  if (gap > 0) html.style.paddingRight = `${gap}px`;
+  if (scrollX || scrollY) window.scrollTo(0, 0);
 
   const removeEvents = chain(
     on(document, 'touchstart', onTouchStart, { passive: false, capture: true }),
@@ -77,9 +80,9 @@ function preventScrollMobileSafari(): Cleanup {
   );
 
   return () => {
-    html.style.paddingRight = prevPadding;
+    if (gap > 0) html.style.paddingRight = prevPadding;
     removeEvents();
-    window.scrollTo(scrollX, scrollY);
+    if (scrollX || scrollY) window.scrollTo(scrollX, scrollY);
   };
 }
 
