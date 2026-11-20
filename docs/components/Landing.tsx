@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { href } from '../router';
-import { isDark, theme } from '../theme';
+import { ThemeToggle } from './AnimatedIcons';
 import { Drawer } from './Drawer';
-import { Icon } from './Icon';
 
 const features = [
   {
@@ -36,13 +35,7 @@ export function Landing() {
     <div data-zupf-wrapper class="app">
       <main class="landing">
         <div class="landing-actions" aria-label="Page actions">
-          <button
-            class="icon-btn"
-            aria-label="Toggle theme"
-            onClick={() => (theme.value = isDark() ? 'light' : 'dark')}
-          >
-            <Icon name={isDark() ? 'sun' : 'moon'} />
-          </button>
+          <ThemeToggle />
         </div>
 
         <div class="landing-hero">

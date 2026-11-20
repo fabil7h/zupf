@@ -2,7 +2,7 @@ import { LocationProvider, Route, Router } from 'preact-iso';
 import { useEffect } from 'preact/hooks';
 import { Example } from './components/Example';
 import { Landing } from './components/Landing';
-import { Header, Nav, Pager, Toc } from './components/Layout';
+import { Header, Nav, Pager, Toc, useActiveSection } from './components/Layout';
 import type { Page } from './examples';
 import { pages } from './pages';
 import { useDocRoute } from './router';
@@ -10,6 +10,7 @@ import './docs.css';
 
 function PageView({ page }: { page: Page }) {
   const { anchor } = useDocRoute();
+  useActiveSection(page);
 
   useEffect(() => {
     document.title = `${page.title} · zupf`;
@@ -17,7 +18,9 @@ function PageView({ page }: { page: Page }) {
 
   // The router scrolls to the top on navigation; anchors are ours to handle.
   useEffect(() => {
-    if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth' });
+    if (!anchor) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(anchor)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
   }, [page, anchor]);
 
   return (
@@ -28,7 +31,6 @@ function PageView({ page }: { page: Page }) {
         {page.Component ? <page.Component /> : page.examples?.map((ex) => <Example key={ex.id} ex={ex} />)}
         <Pager page={page} />
       </article>
-      <Toc page={page} />
     </main>
   );
 }
@@ -41,10 +43,11 @@ function DocsPage() {
   return (
     // Everything inside the wrapper is scaled back by `scaleBackground`; sheets portal to <body>.
     <div data-zupf-wrapper class="app">
-      <Header />
+      <Header page={page} />
       <div class="layout">
         <nav class="sidebar" aria-label="Documentation">
           <Nav />
+          <Toc page={page} />
         </nav>
         {/* Keyed by page so example sheets are created and destroyed per page. */}
         <PageView key={page.slug} page={page} />

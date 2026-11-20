@@ -341,8 +341,7 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
   };
   /**
    * Slide the row out from wherever it is (dragged or open), then collapse it, and only remove it once that has
-   * finished. Web Animations instead of CSS transitions + a timer: `finished` says when it's really done, so the
-   * list never jumps by the last few px.
+   * finished. Following rows move with `translate`, so the collapse stays compositor-friendly.
    */
   const animateOut = async (id: number, dir: 'left' | 'right') => {
     const li = list.current?.querySelector<HTMLElement>(`li[data-id="${id}"]`);
@@ -352,18 +351,42 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
     row.style.transition = 'none'; // the snap-back transition mustn't fight the animation
     li.style.removeProperty('--progress');
     delete li.dataset.peek;
+    const animations: Animation[] = [];
     try {
-      await row.animate(
+      const exit = row.animate(
         [{ translate: from === 'none' ? '0px' : from }, { translate: dir === 'left' ? '-101%' : '101%' }],
         { duration: 250, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' },
-      ).finished;
-      await li.animate([{ height: `${li.offsetHeight}px` }, { height: '0px', borderBottomWidth: '0px' }], {
-        duration: 200,
-        easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
-        fill: 'forwards',
-      }).finished;
+      );
+      animations.push(exit);
+      await exit.finished;
+      const height = li.offsetHeight;
+      const children = Array.from(li.parentElement?.children ?? []);
+      const siblings = children
+        .slice(children.indexOf(li) + 1)
+        .filter((element): element is HTMLElement => element instanceof HTMLElement);
+      const collapse = [
+        // Opacity, not clip-path: stays on the compositor. Rows below slide up over it anyway.
+        li.animate([{ opacity: 1 }, { opacity: 0 }], {
+          duration: 200,
+          easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+          fill: 'forwards',
+        }),
+        ...siblings.map((sibling) =>
+          sibling.animate([{ translate: '0 0' }, { translate: `0 -${height}px` }], {
+            duration: 200,
+            easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+            fill: 'forwards',
+            // Adds up with the collapse of a row above that is still running (several rows removed in a row).
+            composite: 'add',
+          }),
+        ),
+      ];
+      animations.push(...collapse);
+      await Promise.all(collapse.map((animation) => animation.finished));
     } catch {
       /* cancelled, e.g. the element went away */
+    } finally {
+      for (const animation of animations) animation.cancel();
     }
   };
   const run = useRef((id: number, action: MailAction, via: string) => {

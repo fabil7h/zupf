@@ -1,6 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { highlight, type Lang } from '../highlight';
-import { Icon } from './Icon';
+import { CopyIcon } from './AnimatedIcons';
 
 export interface CodeTab {
   label?: string;
@@ -12,6 +12,8 @@ export function CodeBlock({ tabs }: { tabs: CodeTab[] }) {
   const [active, setActive] = useState(0);
   const [copied, setCopied] = useState(false);
   const current = tabs[active];
+  // Demos re-render their section on every status change; only re-highlight when the code changes.
+  const html = useMemo(() => highlight(current.code.trim(), current.lang), [current.code, current.lang]);
   const showTabs = tabs.length > 1 || !!tabs[0].label;
 
   const copy = async () => {
@@ -37,11 +39,11 @@ export function CodeBlock({ tabs }: { tabs: CodeTab[] }) {
           </div>
         )}
         <button class="copy" aria-label={copied ? 'Copied' : 'Copy code'} title="Copy code" onClick={() => void copy()}>
-          <Icon name={copied ? 'check' : 'copy'} />
+          <CopyIcon copied={copied} />
         </button>
       </div>
       <pre>
-        <code dangerouslySetInnerHTML={{ __html: highlight(current.code.trim(), current.lang) }} />
+        <code dangerouslySetInnerHTML={{ __html: html }} />
       </pre>
     </div>
   );

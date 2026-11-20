@@ -1,7 +1,7 @@
 // Demo content for the pull-to-refresh docs: different kinds of containers and content,
 // each with a `refresh` that changes what is shown.
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 
 export interface ContentKind<S> {
   initial: () => S;
@@ -23,7 +23,10 @@ export function useContent<S>(kind: ContentKind<S>, delay = 1200) {
     await wait(delay);
     setState((s) => kind.refresh(s));
   };
-  return { view: <kind.View state={state} />, load };
+  // Same element while the state is unchanged, so status re-renders (pulling, ready…) skip the list.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- kind is a module constant
+  const view = useMemo(() => <kind.View state={state} />, [state]);
+  return { view, load };
 }
 
 let uid = 0;
@@ -188,7 +191,7 @@ export const dashboard: ContentKind<Dashboard> = {
         <small>Sessions, last 12 hours</small>
         <div class="c-bars">
           {state.bars.map((v, i) => (
-            <span key={i} style={{ height: `${Math.round(v * 100)}%` }} />
+            <span key={i} style={{ scale: `1 ${v}` }} />
           ))}
         </div>
       </div>

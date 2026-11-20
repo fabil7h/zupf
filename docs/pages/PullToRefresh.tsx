@@ -24,7 +24,10 @@ import { Table } from '../components/Text';
 
 // ───────────────────────────── demo helpers ─────────────────────────────
 
-/** Creates the instance on mount (with `mouse: true` so the demos work on desktop). */
+/**
+ * Creates the instance on mount (with `mouse: true` so the demos work on desktop).
+ * Every demo's indicator gets the pull progress as `--progress`, for custom indicators to follow.
+ */
 function usePullToRefresh(
   content: RefObject<HTMLElement | null>,
   options: Omit<PullToRefreshOptions, 'content'>,
@@ -32,7 +35,16 @@ function usePullToRefresh(
   const [ptr, setPtr] = useState<PullToRefresh | null>(null);
   const [status, setStatus] = useState<PullStatus>('idle');
   useLayoutEffect(() => {
-    const instance = createPullToRefresh({ mouse: true, ...options, content: content.current! });
+    let instance: PullToRefresh | undefined;
+    instance = createPullToRefresh({
+      mouse: true,
+      ...options,
+      content: content.current!,
+      onPull: (offset, progress) => {
+        instance?.indicator?.style.setProperty('--progress', String(progress));
+        options.onPull?.(offset, progress);
+      },
+    });
     const unsubscribe = instance.subscribe((s) => setStatus(s.status));
     setPtr(instance);
     return () => {
@@ -72,40 +84,84 @@ ${content} {
 }`;
 }
 
+// ───────────────────────────── loading bar ─────────────────────────────
+
+const barCss = `/* The indicator is the bar: full width, 4px tall. */
+.load-bar {
+  --zupf-ptr-indicator-size: 4px;
+  overflow: hidden;
+  background: rgb(14 165 233 / 0.15);
+}
+
+/* --progress (0..1, set from onPull) fills the bar while pulling. */
+.load-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0ea5e9;
+  transform-origin: left;
+  scale: var(--progress, 0) 1;
+}
+
+/* While refreshing it loops indefinitely, until onRefresh settles. */
+.load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
+  right: auto;
+  width: 40%;
+  scale: 1;
+  animation: bar-slide 1s ease-in-out infinite;
+}
+
+@keyframes bar-slide {
+  from { translate: -100%; }
+  to { translate: 250%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
+    animation: none;
+  }
+}`;
+
+const barHtml = `<div data-zupf-ptr-indicator class="load-bar"></div>`;
+
+const Bar = () => <div data-zupf-ptr-indicator class="load-bar" />;
+
+/** Options every loading bar demo uses (shown in the JS tabs). */
+const barOptions = { refreshingOffset: 4 };
+const barJs = `  refreshingOffset: 4, // rest right below the 4px bar, not a full threshold away
+  onPull: (offset, progress) => ptr.indicator.style.setProperty('--progress', progress),
+`;
+
 const basicCode = {
   js: `import { createPullToRefresh } from 'zupf';
 import 'zupf/pull-to-refresh.css';
 
 const ptr = createPullToRefresh({
   content: '#list',
-  onRefresh: async () => {
-    await loadNewItems(); // the indicator stays until this settles
+${barJs}  onRefresh: async () => {
+    await loadNewItems(); // the bar loops until this settles
   },
 });`,
   html: `<div class="ptr-wrapper">
-  <div data-zupf-ptr-indicator>
-    <span data-zupf-ptr-spinner></span>
-  </div>
+  ${barHtml}
   ${listHtml()}
 </div>`,
-  css: baseCss(),
+  css: `${baseCss()}\n\n${barCss}`,
 };
 
 function Basic() {
   const list = useRef<HTMLDivElement>(null);
   const { view, load } = useContent(inbox);
-  const { status } = usePullToRefresh(list, { onRefresh: load });
+  const { status } = usePullToRefresh(list, { ...barOptions, onRefresh: load });
   return (
     <Section
       id="basic"
       title="Basic"
-      description="Pull the list down and let go. Return a promise from `onRefresh` and the spinner stays until it settles."
+      description="Pull the list down and let go. Return a promise from `onRefresh` and the loading bar stays until it settles. `onPull` hands the progress to the bar; the indicator is plain markup you style in CSS (more styles below)."
       code={basicCode}
     >
       <div class="ptr-demo">
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={list} class={`ptr-demo-list ${inbox.class}`}>
           {view}
         </div>
@@ -161,33 +217,17 @@ const arrowCss = `.arrow-indicator {
 
 const arrowPath = 'M12 5v14M5 12l7 7 7-7';
 
-const themedCss = `.themed {
-  --zupf-ptr-indicator-size: 72px;
-  --zupf-ptr-spinner-color: #7c3aed;
-  --zupf-ptr-spinner-track: rgb(124 58 237 / 0.15);
-}
-
-.themed [data-zupf-ptr-indicator] {
-  background: linear-gradient(#ede9fe, transparent);
-}
-
-.themed [data-zupf-ptr-spinner] {
-  width: 28px;
-  height: 28px;
-  border-width: 3px;
-}`;
-
-const ringCss = `/* --zupf-ptr-progress (0..1) drives the ring fill. */
+const ringCss = `/* --progress (0..1, set from onPull) drives the ring fill. */
 .ring {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: conic-gradient(
-    #0ea5e9 calc(var(--zupf-ptr-progress) * 360deg),
+    #0ea5e9 calc(var(--progress, 0) * 360deg),
     rgb(14 165 233 / 0.15) 0
   );
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-  scale: calc(0.6 + var(--zupf-ptr-progress) * 0.4);
+  scale: calc(0.6 + var(--progress, 0) * 0.4);
 }
 
 [data-zupf-ptr-indicator]:is([data-state='refreshing'], [data-settling='refreshed']) .ring {
@@ -197,41 +237,11 @@ const ringCss = `/* --zupf-ptr-progress (0..1) drives the ring fill. */
 
 @keyframes ring-spin {
   to { transform: rotate(360deg); }
-}`;
-
-const barCss = `/* The indicator is the bar: full width, 4px tall. */
-.load-bar {
-  --zupf-ptr-indicator-size: 4px;
-  overflow: hidden;
-  background: rgb(14 165 233 / 0.15);
-}
-
-/* --zupf-ptr-progress (0..1) fills the bar while pulling. */
-.load-bar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #0ea5e9;
-  transform-origin: left;
-  scale: var(--zupf-ptr-progress) 1;
-}
-
-/* While refreshing it loops indefinitely, until onRefresh settles. */
-.load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
-  right: auto;
-  width: 40%;
-  scale: 1;
-  animation: bar-slide 1s ease-in-out infinite;
-}
-
-@keyframes bar-slide {
-  from { translate: -100%; }
-  to { translate: 250%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
-    animation-duration: 2.5s;
+  [data-zupf-ptr-indicator]:is([data-state='refreshing'], [data-settling='refreshed']) .ring {
+    animation: none;
   }
 }`;
 
@@ -256,11 +266,101 @@ const revealCss = `/* No indicator: the list uncovers a panel behind it. */
 .reveal [data-zupf-ptr] {
   position: relative; /* above the panel */
   background: var(--list-bg, #fff);
-  transition: border-radius 200ms;
 }
 
 .reveal [data-zupf-ptr]:not([data-state='idle']) {
   border-radius: 16px 16px 0 0;
+}`;
+
+const dotsCss = `/* Three dots appear one after another as you pull, then bounce while refreshing. */
+.dots {
+  gap: 6px;
+}
+
+/* Shown in full while pulling: each dot fades in on its own. */
+.dots:is([data-state='pulling'], [data-state='ready']) {
+  opacity: 1 !important;
+}
+
+.dots i {
+  --i: 0;
+  --p: clamp(0, var(--progress, 0) * 3 - var(--i), 1);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+  opacity: var(--p);
+  scale: var(--p);
+  transition: background-color 150ms;
+}
+
+.dots i:nth-child(2) { --i: 1; }
+.dots i:nth-child(3) { --i: 2; }
+
+/* Past the threshold: letting go refreshes. */
+.dots[data-state='ready'] i {
+  background: #22c55e;
+}
+
+.dots:is([data-state='refreshing'], [data-settling='refreshed']) i {
+  --p: 1;
+  animation: dot-bounce 600ms ease-in-out infinite;
+  animation-delay: calc(var(--i) * 100ms);
+}
+
+@keyframes dot-bounce {
+  50% { translate: 0 -8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots:is([data-state='refreshing'], [data-settling='refreshed']) i {
+    animation: none;
+  }
+}`;
+
+const liquidWave = 'M0 8 Q15 0 30 8 T60 8 T90 8 T120 8 V60 H0 Z';
+
+const liquidCss = `/* A bubble that fills up as you pull; the wave keeps moving while refreshing. */
+.liquid {
+  position: relative;
+  overflow: hidden;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #0ea5e9;
+  border-radius: 50%;
+  background: rgb(14 165 233 / 0.1);
+}
+
+/* Twice as wide as the bubble, so it can slide by one wave length. */
+.liquid svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  fill: #0ea5e9;
+  translate: 0 calc((1 - var(--progress, 0)) * 100%);
+}
+
+/* Moving only while visible: an endless animation on a hidden element still costs frames. */
+[data-zupf-ptr-indicator]:is(:not([data-state='idle']), [data-settling]) .liquid path {
+  transform-box: fill-box;
+  animation: liquid-wave 1s linear infinite;
+}
+
+[data-zupf-ptr-indicator]:is([data-state='refreshing'], [data-settling='refreshed']) .liquid svg {
+  translate: 0 30%;
+  transition: translate 400ms ease;
+}
+
+@keyframes liquid-wave {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-zupf-ptr-indicator] .liquid path {
+    animation: none !important;
+  }
 }`;
 
 interface IndicatorStyle {
@@ -270,8 +370,6 @@ interface IndicatorStyle {
   css?: string;
   /** Indicator markup for the HTML tab. */
   html: string;
-  /** `refreshingOffset` for this style. */
-  refreshingOffset?: number;
   /** Live indicator; `null` = no indicator element (`indicator: null`). */
   Indicator: (() => JSX.Element) | null;
   Behind?: () => JSX.Element;
@@ -279,26 +377,36 @@ interface IndicatorStyle {
 
 const indicatorStyles: IndicatorStyle[] = [
   {
-    label: 'Spinner',
-    html: `<div data-zupf-ptr-indicator>
-  <span data-zupf-ptr-spinner></span>
+    label: 'Dots',
+    css: dotsCss,
+    html: `<div data-zupf-ptr-indicator class="dots">
+  <i></i><i></i><i></i>
 </div>`,
     Indicator: () => (
-      <div data-zupf-ptr-indicator>
-        <span data-zupf-ptr-spinner />
+      <div data-zupf-ptr-indicator class="dots">
+        <i />
+        <i />
+        <i />
       </div>
     ),
   },
   {
-    label: 'Themed',
-    area: 'themed',
-    css: themedCss,
+    label: 'Liquid',
+    css: liquidCss,
     html: `<div data-zupf-ptr-indicator>
-  <span data-zupf-ptr-spinner></span>
+  <span class="liquid">
+    <svg viewBox="0 0 120 60" preserveAspectRatio="none">
+      <path d="${liquidWave}" />
+    </svg>
+  </span>
 </div>`,
     Indicator: () => (
       <div data-zupf-ptr-indicator>
-        <span data-zupf-ptr-spinner />
+        <span class="liquid">
+          <svg viewBox="0 0 120 60" preserveAspectRatio="none">
+            <path d={liquidWave} />
+          </svg>
+        </span>
       </div>
     ),
   },
@@ -313,14 +421,6 @@ const indicatorStyles: IndicatorStyle[] = [
         <span class="ring" />
       </div>
     ),
-  },
-  {
-    label: 'Loading bar',
-    css: barCss,
-    // Content rests right below the 4px bar, which sits between the header and the posts.
-    refreshingOffset: 4,
-    html: `<div data-zupf-ptr-indicator class="load-bar"></div>`,
-    Indicator: () => <div data-zupf-ptr-indicator class="load-bar" />,
   },
   {
     label: 'Arrow + label',
@@ -347,6 +447,17 @@ const indicatorStyles: IndicatorStyle[] = [
     html: `<div class="reveal-panel"></div>`,
     Indicator: null,
     Behind: () => <div class="reveal-panel" />,
+  },
+  {
+    label: 'Built-in spinner',
+    html: `<div data-zupf-ptr-indicator>
+  <span data-zupf-ptr-spinner></span>
+</div>`,
+    Indicator: () => (
+      <div data-zupf-ptr-indicator>
+        <span data-zupf-ptr-spinner />
+      </div>
+    ),
   },
 ];
 
@@ -381,7 +492,6 @@ function BlogDemo({ style }: { style: IndicatorStyle }) {
   const { status } = usePullToRefresh(content, {
     onRefresh: load,
     ...(style.Indicator ? {} : { indicator: null }),
-    ...(style.refreshingOffset === undefined ? {} : { refreshingOffset: style.refreshingOffset }),
   });
   const { Indicator, Behind } = style;
   return (
@@ -413,17 +523,15 @@ function Blog() {
     <Section
       id="blog"
       title="Indicator styles"
-      description="The indicator is your own markup, styled in plain CSS: zupf sets `data-state` and `--zupf-ptr-progress` on it. Switch styles above, from a themed spinner to a progress ring, a loading bar or a panel revealed behind the posts (`indicator: null`). The sticky header stays put; only the posts move."
+      description="The indicator is your own markup, styled in plain CSS: zupf sets `data-state` on it, and `onPull` reports the progress. Switch styles above: dots, a filling bubble, a progress ring, or a panel revealed behind the posts (`indicator: null`). The sticky header stays put; only the posts move."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#posts',
+  // Hand the progress to your indicator's CSS as --progress (0..1)
+  onPull: (offset, progress) => ptr.indicator.style.setProperty('--progress', progress),
   // scroller: '.blog' is found automatically (nearest scrollable ancestor);
   // pass it explicitly when the scroller is further away or not scrollable yet${
     style.Indicator ? '' : '\n  indicator: null, // the panel behind the posts is the indicator'
-  }${
-    style.refreshingOffset === undefined
-      ? ''
-      : `\n  refreshingOffset: ${style.refreshingOffset}, // rest right below the bar, not a full threshold away`
   }
   onRefresh: async () => {
     const posts = await fetch('/api/posts?since=' + lastSeen).then((r) => r.json());
@@ -460,7 +568,7 @@ ${indent(style.html, 4)}
 function Dashboard() {
   const content = useRef<HTMLDivElement>(null);
   const { view, load } = useContent(dashboard, 1000);
-  const { status } = usePullToRefresh(content, { onRefresh: load });
+  const { status } = usePullToRefresh(content, { ...barOptions, onRefresh: load });
   return (
     <Section
       id="dashboard"
@@ -469,28 +577,24 @@ function Dashboard() {
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#metrics',
-  onRefresh: async () => {
+${barJs}  onRefresh: async () => {
     const metrics = await fetch('/api/metrics').then((r) => r.json());
     renderDashboard(metrics);
   },
 });`,
         html: `<div class="ptr-wrapper">
-  <div data-zupf-ptr-indicator>
-    <span data-zupf-ptr-spinner></span>
-  </div>
+  ${barHtml}
   <main id="metrics">
     <section class="kpis">…</section>
     <section class="chart">…</section>
     <table class="orders">…</table>
   </main>
 </div>`,
-        css: baseCss('#metrics'),
+        css: `${baseCss('#metrics')}\n\n${barCss}`,
       }}
     >
       <div class="ptr-demo ptr-demo-tall">
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={content} class={`ptr-demo-list ${dashboard.class}`}>
           {view}
         </div>
@@ -506,13 +610,6 @@ const widgetCss = `.widget {
   position: relative;
   overflow: hidden;
   height: 220px;
-  --zupf-ptr-indicator-size: 44px; /* smaller container, smaller indicator */
-}
-
-.widget [data-zupf-ptr-spinner] {
-  width: 16px;
-  height: 16px;
-  border-width: 2px;
 }
 
 .widget-body {
@@ -523,13 +620,11 @@ const widgetCss = `.widget {
 function Widget<S>({ kind, title }: { kind: ContentKind<S>; title: string }) {
   const content = useRef<HTMLDivElement>(null);
   const { view, load } = useContent(kind, 900);
-  const { status } = usePullToRefresh(content, { onRefresh: load, threshold: 44, max: 96 });
+  const { status } = usePullToRefresh(content, { ...barOptions, onRefresh: load, threshold: 44, max: 96 });
   return (
     <div class="ptr-widget-wrap">
       <div class="widget ptr-widget" aria-label={title}>
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={content} class={`widget-body ${kind.class}`}>
           {view}
         </div>
@@ -544,23 +639,23 @@ function Widgets() {
     <Section
       id="widgets"
       title="Small containers"
-      description="One instance per widget. Scale `threshold`, `max` and the indicator size down with the container, and give the content `overflow: auto` so it is its own scroller."
+      description="One instance per widget. Scale `threshold` and `max` down with the container, and give the content `overflow: auto` so it is its own scroller."
       code={{
         js: `for (const body of document.querySelectorAll('.widget-body')) {
-  createPullToRefresh({
+  const ptr = createPullToRefresh({
     content: body,
     threshold: 44,
     max: 96,
+    refreshingOffset: 4,
+    onPull: (offset, progress) => ptr.indicator.style.setProperty('--progress', progress),
     onRefresh: () => reloadWidget(body),
   });
 }`,
         html: `<div class="widget">
-  <div data-zupf-ptr-indicator>
-    <span data-zupf-ptr-spinner></span>
-  </div>
+  ${barHtml}
   <div class="widget-body">…</div>
 </div>`,
-        css: widgetCss,
+        css: `${widgetCss}\n\n${barCss}`,
       }}
     >
       <div class="ptr-widgets">
@@ -606,12 +701,15 @@ const thresholdCss = `/* Optional while tuning: a guide at the threshold.
 
 function TuningDemo({ options }: { options: Tuning }) {
   const list = useRef<HTMLDivElement>(null);
+  const readout = useRef<HTMLSpanElement>(null);
   const { view, load } = useContent(inbox);
-  const [pull, setPull] = useState({ offset: 0, progress: 0 });
   const { status } = usePullToRefresh(list, {
     ...options,
     onRefresh: load,
-    onPull: (offset, progress) => setPull({ offset, progress }),
+    // Written straight to the DOM: this fires every frame, and a re-render would redraw the whole list.
+    onPull: (offset, progress) => {
+      if (readout.current) readout.current.textContent = pullReadout(offset, progress);
+    },
   });
   return (
     <>
@@ -626,13 +724,15 @@ function TuningDemo({ options }: { options: Tuning }) {
           {view}
         </div>
       </div>
-      <Status
-        status={status}
-        extra={`offset: ${Math.round(pull.offset)}px  ·  progress: ${pull.progress.toFixed(2)}`}
-      />
+      <pre class="preview-log">
+        status: {status} · <span ref={readout}>{pullReadout(0, 0)}</span>
+      </pre>
     </>
   );
 }
+
+const pullReadout = (offset: number, progress: number) =>
+  `offset: ${Math.round(offset)}px  ·  progress: ${progress.toFixed(2)}`;
 
 function Tuning() {
   const [variant, setVariant] = useState(0);
@@ -676,7 +776,7 @@ function Api() {
   const [log, setLog] = useState<string[]>([]);
   const [disabled, setDisabled] = useState(false);
   const [mouse, setMouse] = useState(false);
-  const { ptr, status } = usePullToRefresh(list, { onRefresh: load, mouse: false });
+  const { ptr, status } = usePullToRefresh(list, { ...barOptions, onRefresh: load, mouse: false });
 
   useEffect(
     () =>
@@ -692,7 +792,7 @@ function Api() {
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#list',
-  onRefresh: loadNewItems,
+${barJs}  onRefresh: loadNewItems,
 });
 
 refreshButton.onclick = () => ptr.refresh();
@@ -731,9 +831,7 @@ ptr.status; // 'idle' | 'pulling' | 'ready' | 'refreshing'`,
         </button>
       </div>
       <div class="ptr-demo">
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={list} class={`ptr-demo-list ${notifications.class}`}>
           {view}
         </div>
@@ -765,7 +863,7 @@ const nestedCss = `.carousel {
 function Nested() {
   const list = useRef<HTMLDivElement>(null);
   const { view, load } = useContent(inbox);
-  const { status } = usePullToRefresh(list, { onRefresh: load });
+  const { status } = usePullToRefresh(list, { ...barOptions, onRefresh: load });
   return (
     <Section
       id="nested"
@@ -774,9 +872,7 @@ function Nested() {
       code={{
         js: basicCode.js,
         html: `<div class="ptr-wrapper">
-  <div data-zupf-ptr-indicator>
-    <span data-zupf-ptr-spinner></span>
-  </div>
+  ${barHtml}
   <div id="list">
     <div class="carousel">…</div>
     <div class="inner-scroller">…</div>
@@ -786,13 +882,13 @@ function Nested() {
 </div>`,
         css: `${baseCss()}
 
-${nestedCss}`,
+${nestedCss}
+
+${barCss}`,
       }}
     >
       <div class="ptr-demo">
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={list} class="ptr-demo-list ptr-nested">
           <div class="carousel">
             {['Swipe', 'me', 'sideways', '→'].map((t) => (
@@ -841,7 +937,7 @@ const drawerCss = `#sheet {
 function DrawerList() {
   const list = useRef<HTMLDivElement>(null);
   const { view, load } = useContent(notifications);
-  const { status } = usePullToRefresh(list, { onRefresh: load });
+  const { status } = usePullToRefresh(list, { ...barOptions, onRefresh: load });
   return (
     <>
       <div class="ptr-sheet-header">
@@ -849,9 +945,7 @@ function DrawerList() {
         <span class="ptr-sheet-status">{status}</span>
       </div>
       <div class="sheet-list">
-        <div data-zupf-ptr-indicator>
-          <span data-zupf-ptr-spinner />
-        </div>
+        <Bar />
         <div ref={list} class={`ptr-demo-list ${notifications.class}`} data-zupf-no-drag>
           {view}
         </div>
@@ -873,7 +967,10 @@ import 'zupf/style.css';
 import 'zupf/pull-to-refresh.css';
 
 createSheet({ content: '#sheet', overlay: '#overlay', trigger: '#open' });
-createPullToRefresh({ content: '#sheet-list', onRefresh: loadNotifications });`,
+const ptr = createPullToRefresh({
+  content: '#sheet-list',
+${barJs}  onRefresh: loadNotifications,
+});`,
         html: `<button id="open">Notifications</button>
 
 <div id="overlay"></div>
@@ -881,13 +978,11 @@ createPullToRefresh({ content: '#sheet-list', onRefresh: loadNotifications });`,
   <div data-zupf-handle></div>
   <h2 data-zupf-title>Notifications</h2>
   <div class="sheet-list">
-    <div data-zupf-ptr-indicator>
-      <span data-zupf-ptr-spinner></span>
-    </div>
+    ${barHtml}
     <div id="sheet-list" data-zupf-no-drag>…</div>
   </div>
 </div>`,
-        css: drawerCss,
+        css: `${drawerCss}\n\n${barCss}`,
       }}
     >
       <div class="preview-actions">
@@ -976,8 +1071,6 @@ export function PullToRefreshPage() {
             ['data-state', 'content, indicator', '`idle`, `pulling`, `ready` or `refreshing`.'],
             ['data-settling', 'indicator', '`refreshed` or `cancelled` while sliding back to rest.'],
             ['data-pulling', 'content', 'Set while a finger is pulling.'],
-            ['--zupf-ptr-offset', 'content, indicator', 'Current pull offset in px.'],
-            ['--zupf-ptr-progress', 'content, indicator', '0..1 towards the threshold.'],
             ['--zupf-ptr-indicator-size', 'theme', 'Indicator height. Default `64px`.'],
             ['--zupf-ptr-spinner-color', 'theme', 'Spinner color. Default `currentColor`.'],
             ['--zupf-ptr-spinner-track', 'theme', 'Spinner track color.'],

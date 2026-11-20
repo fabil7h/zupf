@@ -1,9 +1,10 @@
+import { signal } from '@preact/signals';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Sheet } from '../../src';
 import type { Page } from '../examples';
 import { pages } from '../pages';
 import { href, useDocRoute } from '../router';
-import { isDark, theme } from '../theme';
+import { ThemeToggle } from './AnimatedIcons';
 import { Drawer } from './Drawer';
 import { Icon } from './Icon';
 
@@ -37,14 +38,14 @@ function Logo() {
   );
 }
 
-export function Header() {
+export function Header({ page }: { page: Page }) {
   const menu = useRef<HTMLButtonElement>(null);
   const [mobileNav, setMobileNav] = useState<Sheet | null>(null);
 
   // Close the mobile navigation sheet after navigating.
-  const { slug } = useDocRoute();
+  const { slug, anchor } = useDocRoute();
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- only react to navigation, not to the sheet appearing
-  useEffect(() => mobileNav?.close(), [slug]);
+  useEffect(() => mobileNav?.close(), [slug, anchor]);
 
   return (
     <header class="topbar">
@@ -55,16 +56,15 @@ export function Header() {
         <Logo />
         <span class="tagline">Drawer, pull-to-refresh and gestures for any framework. Optimized for mobile use.</span>
         <div class="topbar-actions">
-          <a class="icon-btn" href="https://github.com/fabil7h/zupf" aria-label="GitHub repository" title="GitHub">
+          <a
+            class="icon-btn github-btn"
+            href="https://github.com/fabil7h/zupf"
+            aria-label="GitHub repository"
+            title="GitHub"
+          >
             <Icon name="github" />
           </a>
-          <button
-            class="icon-btn"
-            aria-label="Toggle theme"
-            onClick={() => (theme.value = isDark() ? 'light' : 'dark')}
-          >
-            <Icon name={isDark() ? 'sun' : 'moon'} />
-          </button>
+          <ThemeToggle />
         </div>
       </div>
       {/* Mobile navigation: a left-side zupf */}
@@ -82,6 +82,7 @@ export function Header() {
           </span>
         </div>
         <Nav />
+        <Toc page={page} />
       </Drawer>
     </header>
   );
@@ -111,29 +112,57 @@ export function Pager({ page }: { page: Page }) {
   );
 }
 
-export function Toc({ page }: { page: Page }) {
-  const examples = page.toc ?? page.examples ?? [];
-  const [activeId, setActiveId] = useState(examples[0]?.id ?? '');
+/** Section in view, shared by every TOC on the page (sidebar, aside, mobile nav). */
+const activeSection = signal<{ slug: string; id: string } | null>(null);
 
+/** Tracks the section in view and keeps the URL hash in sync. Call once per page. */
+export function useActiveSection(page: Page) {
   useEffect(() => {
+    const examples = page.toc ?? page.examples ?? [];
     let frame = 0;
+    let measureFrame = 0;
     let syncTimer = 0;
     let syncEnabled = false;
     let pendingId = examples[0]?.id ?? '';
+    let sectionTops: { id: string; top: number }[] = [];
+    let maxScroll = 0;
     const enableSync = () => {
       syncEnabled = true;
+    };
+    const measure = () => {
+      measureFrame = 0;
+      const scrollY = window.scrollY;
+      sectionTops = examples
+        .map(({ id }) => {
+          const section = document.getElementById(id);
+          return section ? { id, top: section.getBoundingClientRect().top + scrollY } : null;
+        })
+        .filter((section): section is { id: string; top: number } => section !== null);
+      maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      updateActive();
+    };
+    // Resize events come in bursts (Safari fires ~25 when the body gets fixed), and sections resize while
+    // scrolling (content-visibility renders them on approach): measure at most once a frame.
+    const scheduleMeasure = () => {
+      if (!measureFrame) {
+        measureFrame = requestAnimationFrame(() => {
+          measureFrame = 0;
+          measure();
+        });
+      }
     };
     const updateActive = (allowBottom = false) => {
       frame = 0;
       let next = examples[0]?.id ?? '';
-      for (const example of examples) {
-        const section = document.getElementById(example.id);
-        if (section && section.getBoundingClientRect().top <= 96) next = example.id;
+      const threshold = window.scrollY + 96;
+      for (const section of sectionTops) {
+        if (section.top > threshold) break;
+        next = section.id;
       }
-      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
-      if (allowBottom && atBottom) next = examples.at(-1)?.id ?? next;
+      if (allowBottom && window.scrollY >= maxScroll - 2) next = examples.at(-1)?.id ?? next;
       pendingId = next;
-      setActiveId(next);
+      const current = activeSection.peek();
+      if (current?.slug !== page.slug || current.id !== next) activeSection.value = { slug: page.slug, id: next };
     };
     const syncUrl = () => {
       if (!syncEnabled || !pendingId) return;
@@ -146,23 +175,35 @@ export function Toc({ page }: { page: Page }) {
       syncTimer = window.setTimeout(syncUrl, 120);
     };
 
-    updateActive();
+    measure();
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleMeasure);
+    const article = document.querySelector('.content > article');
+    if (article) resizeObserver?.observe(article);
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', scheduleMeasure);
     window.addEventListener('pointerdown', enableSync, { passive: true });
     window.addEventListener('wheel', enableSync, { passive: true });
     window.addEventListener('touchmove', enableSync, { passive: true });
     window.addEventListener('keydown', enableSync);
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', scheduleMeasure);
       window.removeEventListener('pointerdown', enableSync);
       window.removeEventListener('wheel', enableSync);
       window.removeEventListener('touchmove', enableSync);
       window.removeEventListener('keydown', enableSync);
+      resizeObserver?.disconnect();
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(measureFrame);
       window.clearTimeout(syncTimer);
     };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- `examples` derives from `page`, keyed on page.slug below
-  }, [page.slug]);
+  }, [page]);
+}
+
+export function Toc({ page }: { page: Page }) {
+  const examples = page.toc ?? page.examples ?? [];
+  const active = activeSection.value;
+  const activeId = active?.slug === page.slug ? active.id : (examples[0]?.id ?? '');
 
   if (examples.length < 2) return null;
   return (

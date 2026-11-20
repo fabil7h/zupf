@@ -35,11 +35,31 @@
     corner-shape: squircle;
   }
 
-  /* The handle stays a pill, the spinner a circle. */
+  /* The handle stays a pill, the spinner a circle. Demo frames whose content moves while clipped
+     (pulled lists, swiped rows) stay round too: a squircle clip needs a mask layer, a round one doesn't. */
   [data-zupf-handle],
   [data-zupf-ptr-spinner],
-  .ptr-demo .ring {
+  .ptr-demo .ring,
+  .ptr-demo .liquid,
+  .ptr-demo .dots i,
+  .ptr-demo,
+  .ptr-widget,
+  .gesture-list {
     corner-shape: round;
+  }
+
+  /* Round corners don't need the squircle scale-up: keep their original radii.
+     (:root for specificity, the base rules come later in the file.) */
+  :root .ptr-demo {
+    border-radius: 16px;
+  }
+
+  :root .ptr-widget {
+    border-radius: 20px;
+  }
+
+  :root .gesture-list {
+    border-radius: 12px;
   }
 }
 
@@ -132,8 +152,20 @@ pre code {
   z-index: 10;
   height: 56px;
   background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
+}
+
+/* Blurring what scrolls underneath is costly on phones (and again while the page scales behind a sheet). */
+@media (hover: hover) and (pointer: fine) {
+  .topbar {
+    backdrop-filter: blur(8px);
+  }
+}
+
+@media (hover: none) {
+  .topbar {
+    background: var(--bg);
+  }
 }
 
 .topbar-inner {
@@ -493,15 +525,14 @@ pre code {
 
 .content {
   display: grid;
-  grid-template-columns: minmax(0, 720px) 180px;
-  gap: 48px;
+  grid-template-columns: minmax(0, 720px);
   padding: 40px 48px 96px;
 }
 
+/* The TOC lives in the sidebar, below the page links (and in the mobile nav sheet). */
 .toc {
-  position: sticky;
-  top: 96px;
-  align-self: start;
+  display: block;
+  margin-top: 24px;
 }
 
 article h1 {
@@ -520,6 +551,8 @@ article h2 {
 
 article section {
   scroll-margin-top: 80px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
 }
 
 article h2 a {
@@ -954,16 +987,6 @@ td:first-child {
 
 /* ── responsive ────────────────────────────────────────── */
 
-@media (max-width: 1100px) {
-  .content {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .toc {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
   .landing {
     padding-inline: 20px;
@@ -1316,9 +1339,11 @@ td:first-child {
 
 .c-bars span {
   flex: 1;
+  height: 100%;
+  transform-origin: bottom;
   border-radius: 3px 3px 0 0;
   background: linear-gradient(#6366f1, #a5b4fc);
-  transition: height 400ms ease;
+  transition: scale 400ms ease;
 }
 
 .c-orders {
@@ -1581,8 +1606,20 @@ td:first-child {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .c-bars span,
+  .gesture-pad,
+  .gesture-list-row,
+  .gesture-list-actions {
+    transition: none !important;
+  }
+
   .c-featured[data-fresh] .c-cover {
     animation: none;
+  }
+
+  .gesture-pad[data-pressed] .hold-bar {
+    transform: scaleX(1);
+    transition: none;
   }
 }
 
@@ -1673,10 +1710,10 @@ td:first-child {
   pointer-events: none;
 }
 
-/* Hold mode: color and label fade in with --progress (0..1) while the row is dragged. */
+/* Hold mode: color and label fade in with --progress (0..1) while the row is dragged.
+   One layer whose opacity changes, instead of repainting a color-mix() background every move. */
 .gesture-list li:is([data-peek], [data-removed]) {
-  --tint: color-mix(in srgb, var(--color) calc(var(--progress, 1) * 100%), var(--bg-subtle));
-  background: var(--tint);
+  background: var(--bg-subtle);
 }
 
 .gesture-list li:is([data-peek='delete'], [data-removed='delete']) {
@@ -1696,7 +1733,9 @@ td:first-child {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
+  background: var(--color);
   opacity: var(--progress, 1);
+  will-change: opacity;
 }
 
 .gesture-list li:is([data-peek='delete'], [data-removed='delete'])::before {
@@ -1721,7 +1760,6 @@ td:first-child {
   background: var(--bg);
   transition:
     translate 250ms cubic-bezier(0.32, 0.72, 0, 1),
-    scale 150ms,
     background 150ms;
 }
 
@@ -1892,4 +1930,280 @@ td:first-child {
 
 .gesture-list[data-holding] li[data-active] .gesture-list-row {
   background: var(--bg-subtle);
+}
+
+/* ── micro interactions ────────────────────────────────── */
+/* Only scale, translate and opacity move; colors fade. Transitions rather than keyframes,
+   so nothing replays when a section renders in (content-visibility) or the page loads. */
+
+:root {
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.btn,
+.icon-btn,
+.copy,
+.segmented button,
+.code-tabs button,
+.pager a,
+.nav-group a,
+.toc a {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    box-shadow 150ms ease,
+    scale 200ms var(--ease-out),
+    translate 200ms var(--ease-out);
+}
+
+/* Press: a quick, small squeeze. */
+.btn:active:not(:disabled),
+.segmented button:active {
+  scale: 0.97;
+  transition-duration: 80ms;
+}
+
+.icon-btn:active,
+.copy:active {
+  scale: 0.9;
+  transition-duration: 80ms;
+}
+
+/* The tab underline grows in under the selected tab and shrinks out of the old one. */
+.code-tabs button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  border-radius: 1px;
+  background: currentColor;
+  scale: 0 1;
+  transition: scale 200ms var(--ease-out);
+}
+
+.code-tabs button[aria-selected='true']::after {
+  scale: 1;
+}
+
+/* Nav and TOC: the active bar grows out of the guide line and shrinks back into it. */
+.nav-group a::before,
+.toc a::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: var(--label-inset);
+  bottom: var(--label-inset);
+  width: 1px;
+  border-radius: 1px;
+  background: currentColor;
+  scale: 1 0;
+  transition: scale 250ms var(--ease-out);
+}
+
+.nav-group a[aria-current='page']::before,
+.toc a[aria-current='location']::before {
+  scale: 1;
+}
+
+/* Section anchors slide in next to the heading. */
+.anchor-icon {
+  translate: -4px 0;
+  transition:
+    opacity 150ms ease,
+    translate 200ms var(--ease-out);
+}
+
+article h2 a:hover .anchor-icon,
+article h2 a:focus-visible .anchor-icon {
+  translate: 0 0;
+}
+
+.landing-features a {
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    scale 200ms var(--ease-out),
+    translate 200ms var(--ease-out);
+}
+
+.landing-features a:active {
+  scale: 0.98;
+  transition-duration: 80ms;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing-features a:hover {
+    translate: 0 -2px;
+  }
+
+  .pager-prev:hover {
+    translate: -2px 0;
+  }
+
+  .pager-next:hover {
+    translate: 2px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .icon-btn,
+  .copy,
+  .segmented button,
+  .code-tabs button,
+  .code-tabs button::after,
+  .pager a,
+  .nav-group a,
+  .nav-group a::before,
+  .toc a,
+  .toc a::before,
+  .anchor-icon,
+  .landing-features a {
+    transition-property: background-color, border-color, color, opacity, box-shadow;
+  }
+
+  .btn,
+  .icon-btn,
+  .copy,
+  .segmented button,
+  .pager a,
+  .anchor-icon,
+  .landing-features a {
+    scale: none !important;
+    translate: none !important;
+  }
+}
+
+/* ── svg animations ────────────────────────────────────── */
+
+/* Theme toggle: both icons are stacked; the outgoing one turns away, the incoming one turns in.
+   Transitions only after a click (data-animate), so hydration never spins the icon. */
+.theme-toggle .icon {
+  grid-area: 1 / 1;
+}
+
+.theme-sun,
+.theme-toggle[data-dark] .theme-moon {
+  opacity: 0;
+  rotate: -90deg;
+  scale: 0.5;
+}
+
+.theme-toggle[data-dark] .theme-moon {
+  rotate: 90deg;
+}
+
+.theme-toggle[data-dark] .theme-sun {
+  opacity: 1;
+  rotate: 0deg;
+  scale: 1;
+}
+
+.theme-toggle[data-animate] .icon {
+  transition:
+    opacity 200ms ease,
+    rotate 500ms var(--ease-out),
+    scale 500ms var(--ease-out);
+}
+
+/* Copy: the copy icon shrinks away, a filled square takes its place and the check is drawn into it. */
+.copy-icon {
+  display: inline-grid;
+}
+
+.copy-icon > * {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.copy-icon-copy,
+.copy-icon-check {
+  transition:
+    opacity 150ms ease,
+    scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.copy-icon-check {
+  opacity: 0;
+  scale: 0.6;
+}
+
+.copy-icon-check polyline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 150ms ease;
+}
+
+.copy-icon[data-copied] .copy-icon-copy {
+  opacity: 0;
+  scale: 0.6;
+}
+
+.copy-icon[data-copied] .copy-icon-check {
+  opacity: 1;
+  scale: 1;
+}
+
+.copy-icon[data-copied] .copy-icon-check polyline {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 300ms var(--ease-out) 120ms;
+}
+
+/* GitHub: a small wave on hover. Section anchors tilt as they slide in. */
+@media (hover: hover) and (pointer: fine) {
+  .github-btn:hover svg {
+    animation: svg-wave 500ms var(--ease-out);
+  }
+
+  .anchor-icon {
+    rotate: -20deg;
+    transition:
+      opacity 150ms ease,
+      translate 200ms var(--ease-out),
+      rotate 300ms var(--ease-out);
+  }
+
+  article h2 a:hover .anchor-icon,
+  article h2 a:focus-visible .anchor-icon {
+    rotate: 0deg;
+  }
+}
+
+@keyframes svg-wave {
+  30% {
+    rotate: -12deg;
+  }
+  60% {
+    rotate: 8deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle[data-animate] .icon,
+  .copy-icon-copy,
+  .copy-icon-check,
+  .anchor-icon {
+    transition-property: opacity;
+  }
+
+  .theme-toggle .icon,
+  .copy-icon > *,
+  .anchor-icon {
+    rotate: none !important;
+    scale: none !important;
+  }
+
+  .copy-icon-check polyline {
+    transition: none !important;
+  }
+
+  .github-btn:hover svg {
+    animation: none;
+  }
 }
