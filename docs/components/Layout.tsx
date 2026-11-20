@@ -55,9 +55,9 @@ export function Header() {
         <div class="topbar-actions">
           <a
             class="icon-btn"
-            href="https://github.com/emilkowalski/vaul"
-            aria-label="Original vaul repository"
-            title="vaul"
+            href="https://github.com/fabil7h/zupf"
+            aria-label="GitHub repository"
+            title="GitHub"
           >
             <Icon name="github" />
           </a>
