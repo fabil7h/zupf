@@ -53,7 +53,7 @@ export default defineConfig({
 
   // Oxlint
   lint: {
-    ignorePatterns: ['dist/**', 'docs-dist/**', 'docs-server/**'],
+    ignorePatterns: ['dist/**', 'docs-dist/**'],
     plugins: ['typescript', 'unicorn', 'oxc', 'import'],
     categories: { correctness: 'error', suspicious: 'warn', perf: 'warn' },
     options: { typeAware: true, typeCheck: true },
@@ -67,7 +67,7 @@ export default defineConfig({
 
   // Oxfmt
   fmt: {
-    ignorePatterns: ['dist/**', 'docs-dist/**', 'docs-server/**', 'package-lock.json'],
+    ignorePatterns: ['dist/**', 'docs-dist/**', 'package-lock.json'],
     singleQuote: true,
     printWidth: 120,
     sortPackageJson: true,

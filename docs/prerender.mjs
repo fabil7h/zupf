@@ -1,12 +1,16 @@
 // Static site generation: render every route from the SSR bundle into the client build's index.html.
-//   vp build docs && vp build docs --ssr entry-server.tsx --outDir ../docs-server && node docs/prerender.mjs
+//   vp build docs && node docs/prerender.mjs
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'vite-plus';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const out = join(root, 'docs-dist');
-const { render, routes } = await import(pathToFileURL(join(root, 'docs-server/entry-server.js')).href);
+const docs = dirname(fileURLToPath(import.meta.url));
+const out = join(docs, '..', 'docs-dist');
+
+// Load the app through Vite, so TSX and CSS imports work in Node without a separate SSR build.
+const vite = await createServer({ root: docs, appType: 'custom', server: { middlewareMode: true }, logLevel: 'error' });
+const { render, routes } = await vite.ssrLoadModule('/entry-server.tsx');
 
 const template = await readFile(join(out, 'index.html'), 'utf8');
 const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -27,3 +31,4 @@ async function write(file, route) {
 for (const route of routes) await write(route === '/' ? 'index.html' : `${route.slice(1)}index.html`, route);
 // Static hosts (GitHub Pages, Netlify…) serve this for unknown URLs.
 await write('404.html', '/404/');
+await vite.close();

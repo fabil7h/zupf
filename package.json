@@ -33,7 +33,7 @@
   "scripts": {
     "dev": "vp dev docs",
     "build": "vp pack",
-    "docs:build": "vp build docs && vp build docs --ssr entry-server.tsx --outDir ../docs-server && node docs/prerender.mjs",
+    "docs:build": "vp build docs && node docs/prerender.mjs",
     "docs:preview": "vp preview docs",
     "docs:start": "npm run docs:build && npm run docs:preview",
     "check": "vp check",

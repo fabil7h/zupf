@@ -4,4 +4,3 @@ docs-dist
 __screenshots__
 .vitest
 .playwright-mcp
-docs-server
