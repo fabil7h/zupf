@@ -131,7 +131,7 @@ export function GettingStarted() {
       <p class="lead">
         zupf is a drawer (bottom sheet) that works with any framework. It is a port of{' '}
         <a href="https://github.com/emilkowalski/vaul">vaul</a> without the React dependency. It has no dependencies, is
-        about 11 KB gzipped, and is accessible by default.
+        about 13 KB gzipped, and is accessible by default.
       </p>
 
       <h2 id="installation">Installation</h2>

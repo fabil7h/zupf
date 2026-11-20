@@ -1536,3 +1536,311 @@ td:first-child {
     animation: none;
   }
 }
+
+/* ── gestures ──────────────────────────────────────────── */
+
+.gesture-pad {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  width: min(100%, 380px);
+  min-height: 220px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px dashed var(--border-strong);
+  border-radius: calc(14px * var(--radius-scale));
+  background: var(--bg-subtle);
+  color: var(--fg);
+  text-align: center;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.gesture-pad[data-pressed] {
+  background: color-mix(in srgb, var(--fg) 7%, var(--bg-subtle));
+}
+
+/* Fills over holdTime (500ms) while pressed; solid once it is a hold. */
+.gesture-pad .hold-bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.3;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.gesture-pad[data-pressed] .hold-bar {
+  transform: scaleX(1);
+  transition: transform 500ms linear;
+}
+
+.gesture-pad[data-holding] .hold-bar {
+  opacity: 1;
+}
+
+.gesture-hint {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.gesture-result {
+  font-size: 22px;
+  font-weight: 600;
+  animation: gesture-pop 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes gesture-pop {
+  from {
+    scale: 0.8;
+    opacity: 0;
+  }
+}
+
+.gesture-list {
+  width: min(100%, 420px);
+  height: 300px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: calc(12px * var(--radius-scale));
+  background: var(--bg);
+}
+
+.gesture-list li {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+/* Removed rows slide out and collapse via Web Animations (Gestures.tsx). */
+.gesture-list li[data-leaving] {
+  pointer-events: none;
+}
+
+/* Hold mode: color and label fade in with --progress (0..1) while the row is dragged. */
+.gesture-list li:is([data-peek], [data-removed]) {
+  --tint: color-mix(in srgb, var(--color) calc(var(--progress, 1) * 100%), var(--bg-subtle));
+  background: var(--tint);
+}
+
+.gesture-list li:is([data-peek='delete'], [data-removed='delete']) {
+  --color: #dc2626;
+}
+
+.gesture-list li:is([data-peek='archive'], [data-removed='archive']) {
+  --color: #2563eb;
+}
+
+.gesture-list li:is([data-peek], [data-removed])::before {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  opacity: var(--progress, 1);
+}
+
+.gesture-list li:is([data-peek='delete'], [data-removed='delete'])::before {
+  content: 'Delete';
+  justify-content: flex-end;
+}
+
+.gesture-list li:is([data-peek='archive'], [data-removed='archive'])::before {
+  content: 'Archive';
+}
+
+.gesture-list li[data-leaving] .gesture-list-actions {
+  visibility: hidden;
+}
+
+.gesture-list-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  background: var(--bg);
+  transition:
+    translate 250ms cubic-bezier(0.32, 0.72, 0, 1),
+    scale 150ms,
+    background 150ms;
+}
+
+.gesture-list li[data-open] .gesture-list-row {
+  translate: -192px;
+}
+
+.gesture-list-actions {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  visibility: hidden;
+  transition: visibility 0s 250ms;
+}
+
+.gesture-list li[data-open] .gesture-list-actions {
+  visibility: visible;
+  transition: none;
+}
+
+.gesture-list-actions button {
+  width: 64px;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.gesture-list-actions [data-action='star'] {
+  background: #d97706;
+}
+
+.gesture-list-actions [data-action='archive'] {
+  background: #2563eb;
+}
+
+.gesture-list-actions [data-action='delete'] {
+  background: #dc2626;
+}
+
+.gesture-list-empty {
+  padding: 12px 16px;
+}
+
+.gesture-list-from {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gesture-list-subject,
+.gesture-list-empty {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.gesture-flow-editor {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 520px);
+}
+
+.gesture-flow-editor input {
+  font:
+    14px ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: calc(8px * var(--radius-scale));
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.gesture-flow-editor input[aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
+.gesture-chip {
+  height: 28px;
+  padding: 0 10px;
+  font:
+    12px ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+}
+
+.gesture-chip[aria-pressed='true'] {
+  border-color: var(--fg);
+}
+
+.gesture-error {
+  margin: 0;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.gesture-flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gesture-flow li {
+  padding: 4px 10px;
+  font:
+    12px ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  transition:
+    background 150ms,
+    color 150ms;
+}
+
+.gesture-flow li[data-state='active'] {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.gesture-flow li[data-state='done'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.gesture-flow[data-failed] {
+  animation: gesture-shake 300ms;
+}
+
+.gesture-pad[data-unlocked] {
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+@keyframes gesture-shake {
+  25% {
+    translate: -6px;
+  }
+  75% {
+    translate: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gesture-result,
+  .gesture-flow[data-failed] {
+    animation: none;
+  }
+
+  .gesture-list li,
+  .gesture-list-row {
+    transition: none !important;
+  }
+}
+
+.gesture-list[data-holding] li[data-active] .gesture-list-row {
+  background: var(--bg-subtle);
+}
