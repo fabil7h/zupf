@@ -40,12 +40,14 @@ export interface Example {
 export interface Page {
   slug: string;
   title: string;
-  group: 'Basics' | 'Examples';
+  group: 'Usage';
   intro?: string;
   examples?: Example[];
-  /** Custom page body (Basics pages). */
+  /** Custom page body. */
   Component?: () => JSX.Element;
 }
+
+type ExampleSection = Pick<Page, 'slug' | 'title' | 'intro' | 'examples'>;
 
 const lorem = `<p>tugsheet is a drawer that you can drag, flick and snap. It works with any framework, or none, because you
   render the markup and tugsheet adds the behavior.</p>`;
@@ -58,11 +60,10 @@ const body = (title: string, text = lorem, extra = '') => `<div class="sheet-bod
 
 const longList = Array.from({ length: 30 }, (_, i) => `    <li>Item ${i + 1}</li>`).join('\n');
 
-export const examplePages: Page[] = [
+export const examplePages: ExampleSection[] = [
   {
     slug: 'default',
     title: 'Default',
-    group: 'Examples',
     intro: 'A bottom sheet with default settings. Drag it down, flick it, press Esc or click the overlay to close it.',
     examples: [
       {
@@ -91,7 +92,6 @@ export const examplePages: Page[] = [
   {
     slug: 'snap-points',
     title: 'Snap Points',
-    group: 'Examples',
     intro:
       "Snap points are fractions of the screen (<code>0.5</code>) or pixel strings (<code>'355px'</code>), ordered from smallest to largest. Tap the handle to cycle through them.",
     examples: [
@@ -148,7 +148,6 @@ export const examplePages: Page[] = [
   {
     slug: 'directions',
     title: 'Directions',
-    group: 'Examples',
     intro: 'Sheets can slide in from any edge.',
     examples: [
       ...(['top', 'left', 'right'] as const).map((direction) => ({
@@ -177,7 +176,6 @@ export const examplePages: Page[] = [
   {
     slug: 'nested',
     title: 'Nested',
-    group: 'Examples',
     intro:
       'Pass <code>parent</code> to nest a sheet inside another. While the child is open, the parent scales back and follows the child as you drag it.',
     examples: [
@@ -206,7 +204,6 @@ export const examplePages: Page[] = [
   {
     slug: 'inputs',
     title: 'Inputs',
-    group: 'Examples',
     intro:
       'When the virtual keyboard opens on mobile, tugsheet moves or resizes the sheet so the focused field stays visible. Selects and <code>[data-tugsheet-no-drag]</code> areas never start a drag.',
     examples: [
@@ -255,7 +252,6 @@ ${longList}
   {
     slug: 'other',
     title: 'Other',
-    group: 'Examples',
     intro: 'Behavior switches, theming and the imperative API.',
     examples: [
       {

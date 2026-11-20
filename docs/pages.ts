@@ -1,9 +1,16 @@
 import { examplePages, type Page } from './examples';
-import { Api } from './pages/Api';
+import { DrawerExamples } from './pages/Drawer';
 import { GettingStarted } from './pages/GettingStarted';
 
+const allExamples = examplePages.flatMap((section) => section.examples ?? []);
+
 export const pages: Page[] = [
-  { slug: 'getting-started', title: 'Getting Started', group: 'Basics', Component: GettingStarted },
-  { slug: 'api', title: 'API', group: 'Basics', Component: Api },
-  ...examplePages,
+  { slug: 'getting-started', title: 'Getting Started', group: 'Usage', Component: GettingStarted },
+  {
+    slug: 'drawer',
+    title: 'Drawer',
+    group: 'Usage',
+    Component: DrawerExamples,
+    examples: allExamples,
+  },
 ];

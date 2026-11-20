@@ -7,7 +7,7 @@ import { isDark, theme } from '../theme';
 import { Drawer } from './Drawer';
 import { Icon } from './Icon';
 
-const groups = ['Basics', 'Examples'] as const;
+const groups = ['Usage'] as const;
 
 export function Nav() {
   const current = route.value.slug;
