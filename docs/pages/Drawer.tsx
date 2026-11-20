@@ -4,6 +4,9 @@ import { examplePages } from '../examples';
 export function DrawerExamples() {
   return (
     <>
+      <p class="lead">
+        Every demo is live: open it, play with it, copy the code. Start with snap points and the scaled background.
+      </p>
       {examplePages.map((section) => (
         <section key={section.slug}>
           <h2 id={section.slug}>{section.title}</h2>
