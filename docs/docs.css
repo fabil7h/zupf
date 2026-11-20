@@ -953,3 +953,65 @@ td:first-child {
     flex: 1;
   }
 }
+
+/* Previews never grow wider than the page; long variant pickers scroll instead. */
+.preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.segmented {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.segmented button {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .preview {
+    padding: 16px 12px;
+  }
+
+  /* Tables become stacked cards: name on top, labelled values below. */
+  .table-wrap table,
+  .table-wrap tbody,
+  .table-wrap tr,
+  .table-wrap td {
+    display: block;
+  }
+
+  .table-wrap thead {
+    display: none;
+  }
+
+  .table-wrap tr {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-wrap tr:last-child {
+    border-bottom: 0;
+  }
+
+  .table-wrap td {
+    padding: 0;
+    border: 0;
+  }
+
+  .table-wrap td + td {
+    margin-top: 6px;
+  }
+
+  .table-wrap td:empty {
+    display: none;
+  }
+
+  .table-wrap td:nth-child(2)::before {
+    content: attr(data-label) ': ';
+    color: var(--muted);
+    font-size: 12px;
+  }
+}

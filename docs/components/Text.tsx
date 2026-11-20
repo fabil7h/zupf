@@ -27,11 +27,11 @@ export function Table({ head, rows }: { head: [string, string, string]; rows: [s
         <tbody>
           {rows.map(([name, value, desc]) => (
             <tr key={name}>
-              <td>
+              <td data-label={head[0]}>
                 <code>{name}</code>
               </td>
-              <td>{value && <code>{value}</code>}</td>
-              <td>
+              <td data-label={head[1]}>{value && <code>{value}</code>}</td>
+              <td data-label={head[2]}>
                 <Text>{desc}</Text>
               </td>
             </tr>
