@@ -199,6 +199,42 @@ const ringCss = `/* --zupf-ptr-progress (0..1) drives the ring fill. */
   to { transform: rotate(360deg); }
 }`;
 
+const barCss = `/* The indicator is the bar: full width, 4px tall. */
+.load-bar {
+  --zupf-ptr-indicator-size: 4px;
+  overflow: hidden;
+  background: rgb(14 165 233 / 0.15);
+}
+
+/* --zupf-ptr-progress (0..1) fills the bar while pulling. */
+.load-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0ea5e9;
+  transform-origin: left;
+  scale: var(--zupf-ptr-progress) 1;
+}
+
+/* While refreshing it loops indefinitely, until onRefresh settles. */
+.load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
+  right: auto;
+  width: 40%;
+  scale: 1;
+  animation: bar-slide 1s ease-in-out infinite;
+}
+
+@keyframes bar-slide {
+  from { translate: -100%; }
+  to { translate: 250%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-bar:is([data-state='refreshing'], [data-settling='refreshed'])::before {
+    animation-duration: 2.5s;
+  }
+}`;
+
 const revealCss = `/* No indicator: the list uncovers a panel behind it. */
 .reveal-panel {
   position: absolute;
@@ -234,6 +270,8 @@ interface IndicatorStyle {
   css?: string;
   /** Indicator markup for the HTML tab. */
   html: string;
+  /** `refreshingOffset` for this style. */
+  refreshingOffset?: number;
   /** Live indicator; `null` = no indicator element (`indicator: null`). */
   Indicator: (() => JSX.Element) | null;
   Behind?: () => JSX.Element;
@@ -275,6 +313,14 @@ const indicatorStyles: IndicatorStyle[] = [
         <span class="ring" />
       </div>
     ),
+  },
+  {
+    label: 'Loading bar',
+    css: barCss,
+    // Content rests right below the 4px bar, which sits between the header and the posts.
+    refreshingOffset: 4,
+    html: `<div data-zupf-ptr-indicator class="load-bar"></div>`,
+    Indicator: () => <div data-zupf-ptr-indicator class="load-bar" />,
   },
   {
     label: 'Arrow + label',
@@ -335,6 +381,7 @@ function BlogDemo({ style }: { style: IndicatorStyle }) {
   const { status } = usePullToRefresh(content, {
     onRefresh: load,
     ...(style.Indicator ? {} : { indicator: null }),
+    ...(style.refreshingOffset === undefined ? {} : { refreshingOffset: style.refreshingOffset }),
   });
   const { Indicator, Behind } = style;
   return (
@@ -366,13 +413,17 @@ function Blog() {
     <Section
       id="blog"
       title="Indicator styles"
-      description="The indicator is your own markup, styled in plain CSS: zupf sets `data-state` and `--zupf-ptr-progress` on it. Switch styles above, from a themed spinner to a progress ring or a panel revealed behind the posts (`indicator: null`). The sticky header stays put; only the posts move."
+      description="The indicator is your own markup, styled in plain CSS: zupf sets `data-state` and `--zupf-ptr-progress` on it. Switch styles above, from a themed spinner to a progress ring, a loading bar or a panel revealed behind the posts (`indicator: null`). The sticky header stays put; only the posts move."
       code={{
         js: `const ptr = createPullToRefresh({
   content: '#posts',
   // scroller: '.blog' is found automatically (nearest scrollable ancestor);
   // pass it explicitly when the scroller is further away or not scrollable yet${
     style.Indicator ? '' : '\n  indicator: null, // the panel behind the posts is the indicator'
+  }${
+    style.refreshingOffset === undefined
+      ? ''
+      : `\n  refreshingOffset: ${style.refreshingOffset}, // rest right below the bar, not a full threshold away`
   }
   onRefresh: async () => {
     const posts = await fetch('/api/posts?since=' + lastSeen).then((r) => r.json());
