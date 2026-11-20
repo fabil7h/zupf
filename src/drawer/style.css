@@ -42,7 +42,11 @@
 
 /* Hidden while closed. !important so `display` from your own CSS doesn't leak a closed sheet. */
 [data-zupf-content][hidden],
-[data-zupf-overlay][hidden] {
+[data-zupf-overlay][hidden],
+/* Server-rendered markup before zupf attaches (it sets data-state on init): keep it hidden, no flash.
+   Render `data-zupf-open` on content/overlay to server-render an open sheet. */
+[data-zupf-content]:not([data-state]):not([data-zupf-open]),
+[data-zupf-overlay]:not([data-state]):not([data-zupf-open]) {
   display: none !important;
 }
 

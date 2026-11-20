@@ -177,6 +177,12 @@ Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshe
 
 Render the elements on every render; don't put them behind a condition. zupf shows and hides them with the `hidden` attribute.
 
+### Server rendering
+
+Importing zupf is safe on the server. `createSheet` / `createPullToRefresh` return an inert instance there (closed or idle, every method a no-op), so they don't throw during SSR. Create the real instance on the client (`useEffect`, `onMounted`, `onMount`).
+
+Until then the markup is server-rendered as is. The default CSS keeps `[data-zupf-content]` and `[data-zupf-overlay]` hidden until zupf attaches (it sets `data-state`), so a closed sheet doesn't flash. To server-render an open sheet, add `data-zupf-open` to the content and overlay.
+
 ### React
 
 ```tsx

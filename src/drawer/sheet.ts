@@ -245,6 +245,16 @@ export class Sheet {
   #cancelHandleTap = false;
 
   constructor(options: SheetOptions) {
+    if (typeof document === 'undefined') {
+      // Server render: nothing to attach to. Behave like a destroyed sheet (closed, all methods no-op).
+      this.content = null as never;
+      this.overlay = this.handle = this.wrapper = this.container = this.parent = null;
+      this.triggers = [];
+      this.#layer = { content: null as never };
+      this.#o = { ...DEFAULTS, ...stripUndefined(options as Partial<SheetBehavior>) };
+      this.#destroyed = true;
+      return;
+    }
     const content = resolveElement(options.content);
     if (!content) throw new Error('[zupf] `content` element not found');
     this.content = content;
@@ -321,7 +331,7 @@ export class Sheet {
 
   snapToIndex = (index: number): void => {
     const points = this.#o.snapPoints;
-    if (!points?.length) return;
+    if (this.#destroyed || !points?.length) return;
     index = Math.min(Math.max(index, 0), points.length - 1);
     if (this.#state.open) this.#snapTo(index);
     else this.#setActiveIndex(index);
@@ -329,6 +339,7 @@ export class Sheet {
 
   /** Update behavior/callback options at runtime. */
   setOptions = (next: UpdatableOptions): void => {
+    if (this.#destroyed) return;
     const prev = this.#o;
     this.#o = { ...prev, ...stripUndefined(next) };
     const changed = (k: keyof SheetBehavior) => k in next && next[k] !== prev[k];
