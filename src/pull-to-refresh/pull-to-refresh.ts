@@ -116,6 +116,7 @@ export class PullToRefresh {
   #inFlight: Promise<void> | null = null;
   /** Indicator attributes set by zupf (not by the markup), removed on destroy. */
   #addedAttrs: string[] = [];
+  #spinnerEl: HTMLElement | null = null;
 
   constructor(options: PullToRefreshOptions) {
     if (typeof document === 'undefined') {
@@ -162,6 +163,8 @@ export class PullToRefresh {
       onStart: (e) => {
         this.#pulling = false;
         this.#pressStart = { x: e.clientX, y: e.clientY };
+        // Promote the content to its own layer now, so the first move doesn't pay for it. Only when a pull is possible.
+        if (e.target instanceof Element && this.#isAtTop(e.target)) this.content.style.willChange = 'transform';
       },
       onMove: (e, distance) => this.#move(e, distance),
       // `e` is null when the browser cancelled the pointer: snap back instead of refreshing.
@@ -241,10 +244,12 @@ export class PullToRefresh {
       for (const attr of ['data-zupf-ptr', 'data-state', 'data-pulling', 'data-settling', 'aria-busy']) {
         el.removeAttribute(attr);
       }
-      for (const prop of ['transform', 'transition', '--zupf-ptr-offset', '--zupf-ptr-progress']) {
+      for (const prop of ['transform', 'transition', 'will-change']) {
         el.style.removeProperty(prop);
       }
     }
+    this.indicator?.style.removeProperty('opacity'); // only the indicator is faded
+    this.#spinner()?.style.removeProperty('rotate');
     for (const attr of this.#addedAttrs) this.indicator?.removeAttribute(attr);
   };
 
@@ -289,7 +294,11 @@ export class PullToRefresh {
   }
 
   #release(canRefresh: boolean) {
-    if (!this.#pulling) return;
+    if (!this.#pulling) {
+      // A tap that never pulled. While sliding back to rest the content still moves: the settle timer drops the layer.
+      if (!this.#timers.has('settle')) this.content.style.willChange = '';
+      return;
+    }
     this.#endPull();
     // A mouse pull ends with a click on whatever was pressed; swallow it.
     if (this.#offset > 0) {
@@ -329,8 +338,8 @@ export class PullToRefresh {
       'settle',
       () => {
         this.indicator?.removeAttribute('data-settling');
-        this.#setVars(0, 0);
-        css(this.content, { transition: '', transform: '' });
+        this.#paintProgress(0, 0, false);
+        css(this.content, { transition: '', transform: '', willChange: '' });
       },
       this.#o.duration,
     );
@@ -342,16 +351,28 @@ export class PullToRefresh {
     const progress = pullProgress(offset, this.#o.threshold);
     const timing = `${this.#o.duration}ms ${this.#o.easing}`;
     const transition = animate ? `transform ${timing}, opacity ${timing}` : 'none';
-    if (updateProgress) this.#setVars(offset, progress);
+    this.#paintProgress(offset, progress, animate, updateProgress);
     css(this.content, { transition, transform: offset ? `translate3d(0, ${offset}px, 0)` : '' });
     css(this.indicator, { transition, transform: `translate3d(0, calc(${offset}px - 100%), 0)` });
     this.#o.onPull?.(offset, progress);
   }
 
-  #setVars(offset: number, progress: number) {
-    const vars = { '--zupf-ptr-offset': `${offset}px`, '--zupf-ptr-progress': String(progress) };
-    css(this.content, vars);
-    css(this.indicator, vars);
+  /**
+   * The pull progress as the built-in indicator shows it: `opacity` on the indicator (only while pulling: at rest and
+   * while animating, the stylesheet's state rules decide) and `rotate` on the spinner. Plain properties, not custom
+   * properties, which are costly to restyle on every move. Custom indicators follow `onPull` instead.
+   */
+  #paintProgress(offset: number, progress: number, animate: boolean, updateProgress = true) {
+    css(this.indicator, { opacity: animate || !offset ? '' : String(progress) });
+    if (updateProgress) css(this.#spinner(), { rotate: progress ? `${progress * 270}deg` : '' });
+  }
+
+  /** The built-in spinner inside the indicator, if any (looked up again when the markup was re-rendered). */
+  #spinner(): HTMLElement | null {
+    if (!this.indicator) return null;
+    if (!this.#spinnerEl?.isConnected)
+      this.#spinnerEl = this.indicator.querySelector<HTMLElement>('[data-zupf-ptr-spinner]');
+    return this.#spinnerEl;
   }
 
   #setStatus(status: PullStatus) {

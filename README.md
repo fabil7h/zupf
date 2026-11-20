@@ -179,7 +179,7 @@ Areas inside the content marked `data-zupf-no-drag` never start a pull. Inside a
 
 Instance: `refresh()`, `setOptions(partial)`, `getState()` → `{ status }` (`idle` | `pulling` | `ready` | `refreshing`), `subscribe(fn)`, `destroy()`, `status`.
 
-Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshed` | `cancelled`) on the indicator while it slides back, `data-pulling` on content, `--zupf-ptr-offset` / `--zupf-ptr-progress` custom properties, `--zupf-ptr-indicator-size`, `--zupf-ptr-spinner-color`.
+Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshed` | `cancelled`) on the indicator while it slides back, `data-pulling` on content, `--zupf-ptr-indicator-size`, `--zupf-ptr-spinner-color`.
 
 ## Gestures
 

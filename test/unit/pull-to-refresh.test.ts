@@ -135,7 +135,36 @@ describe('PullToRefresh', () => {
     expect(ptr!.status).toBe('idle');
   });
 
-  it('keeps the indicator look while settling, then resets it', async () => {
+  it('writes opacity and spinner rotate while pulling, and no custom properties', async () => {
+    vi.useFakeTimers();
+    try {
+      const { item, indicator } = mount({ onRefresh: () => undefined, duration: 100 });
+      const spinner = document.createElement('span');
+      spinner.setAttribute('data-zupf-ptr-spinner', '');
+      indicator.append(spinner);
+
+      pull(item, 30);
+      const progress = Number(indicator.style.opacity);
+      expect(progress).toBeGreaterThan(0);
+      expect(progress).toBeLessThan(1);
+      expect(parseFloat(spinner.style.rotate)).toBeCloseTo(progress * 270, 1);
+      expect(indicator.style.getPropertyValue('--zupf-ptr-progress')).toBe('');
+
+      pull(item, 200);
+      expect(indicator.style.opacity).toBe('1');
+      item.dispatchEvent(pointer('pointerup', 300));
+      await vi.advanceTimersByTimeAsync(0);
+      // Settling: the stylesheet's state rules take over the opacity, the spinner keeps its angle.
+      expect(indicator.style.opacity).toBe('');
+      expect(spinner.style.rotate).toBe('270deg');
+      await vi.advanceTimersByTimeAsync(100);
+      expect(spinner.style.rotate).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('marks the indicator while settling, and a new pull interrupts it', async () => {
     vi.useFakeTimers();
     try {
       const { item, indicator } = mount({ onRefresh: () => undefined, duration: 100 });
@@ -144,10 +173,8 @@ describe('PullToRefresh', () => {
       await vi.advanceTimersByTimeAsync(0);
       expect(ptr!.status).toBe('idle');
       expect(indicator.getAttribute('data-settling')).toBe('refreshed');
-      expect(indicator.style.getPropertyValue('--zupf-ptr-progress')).toBe('1');
       await vi.advanceTimersByTimeAsync(100);
       expect(indicator.hasAttribute('data-settling')).toBe(false);
-      expect(indicator.style.getPropertyValue('--zupf-ptr-progress')).toBe('0');
 
       pull(item, 30);
       item.dispatchEvent(pointer('pointerup', 130));
@@ -155,6 +182,27 @@ describe('PullToRefresh', () => {
       // A new pull interrupts settling.
       pull(item, 30);
       expect(indicator.hasAttribute('data-settling')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a tap keeps the content layer while it slides back to rest, and drops it at rest', () => {
+    vi.useFakeTimers();
+    try {
+      const { item, content } = mount({ duration: 100 });
+      item.dispatchEvent(pointer('pointerdown', 100));
+      expect(content.style.willChange).toBe('transform');
+      item.dispatchEvent(pointer('pointerup', 100));
+      expect(content.style.willChange).toBe(''); // tap at rest
+
+      pull(item, 30);
+      item.dispatchEvent(pointer('pointerup', 130)); // settling back
+      item.dispatchEvent(pointer('pointerdown', 100));
+      item.dispatchEvent(pointer('pointerup', 100)); // tap mid-settle
+      expect(content.style.willChange).toBe('transform');
+      vi.advanceTimersByTime(100);
+      expect(content.style.willChange).toBe('');
     } finally {
       vi.useRealTimers();
     }
@@ -265,5 +313,12 @@ describe('PullToRefresh', () => {
     expect(indicator.hasAttribute('aria-hidden')).toBe(false);
     // Set by the markup, so it stays.
     expect(indicator.hasAttribute('data-zupf-ptr-indicator')).toBe(true);
+  });
+
+  it("destroy() keeps the content's own opacity (zupf only fades the indicator)", () => {
+    const { content } = mount();
+    content.style.opacity = '0.5';
+    ptr!.destroy();
+    expect(content.style.opacity).toBe('0.5');
   });
 });

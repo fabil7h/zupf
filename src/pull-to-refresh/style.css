@@ -8,10 +8,10 @@
  *     <div id="list">…</div>           (the `content`)
  *   </div>
  *
- * zupf sets `--zupf-ptr-offset` (px) and `--zupf-ptr-progress` (0..1) on both elements,
- * and `data-state` = idle | pulling | ready | refreshing.
- * While sliding back to rest the indicator also has `data-settling` = refreshed | cancelled;
- * the progress variables keep their last value until it is out of view.
+ * zupf sets `data-state` = idle | pulling | ready | refreshing on the content and the indicator.
+ * While sliding back to rest the indicator also has `data-settling` = refreshed | cancelled.
+ * While pulling, the indicator's `opacity` and the spinner's `rotate` are written inline (cheap per frame).
+ * For any other pull-driven look, use the `onPull(offset, progress)` callback.
  */
 
 :where([data-zupf-ptr]) {
@@ -35,7 +35,7 @@
   height: var(--zupf-ptr-indicator-size, 64px);
   pointer-events: none;
   will-change: transform;
-  opacity: var(--zupf-ptr-progress, 0);
+  opacity: 0;
 }
 
 :where([data-zupf-ptr-indicator][data-state='refreshing']) {
@@ -56,9 +56,10 @@
   border-radius: 50%;
   corner-shape: round;
   box-sizing: border-box;
-  /* Pull progress uses `rotate`, the spin uses `transform`: they add up, so starting
-     and stopping the spin never jumps. */
-  rotate: calc(var(--zupf-ptr-progress, 0) * 270deg);
+  /* Own layer: turning it while pulling is then a composite, not a layout + repaint per frame. */
+  will-change: transform;
+  /* zupf turns it while pulling with an inline `rotate`, the spin uses `transform`: they add up,
+     so starting and stopping the spin never jumps. */
 }
 
 :where([data-zupf-ptr-indicator][data-state='refreshing'] [data-zupf-ptr-spinner]),
