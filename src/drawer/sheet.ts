@@ -1,5 +1,6 @@
 import type { ChangeReason, Direction, SnapPoint } from './types';
 import {
+  afterNextFrame,
   chain,
   closedTransform,
   css,
@@ -24,7 +25,7 @@ import {
 } from '../core';
 import { getSnapOffsets, overlayOpacityAt, resolveRelease, resolveSnapRelease, snapFadeProgress } from './physics';
 import { preventScroll } from './prevent-scroll';
-import { restorePositionFixed, setPositionFixed } from './position-fixed';
+import { setPositionFixed } from './position-fixed';
 import { lockScroll } from './scroll-lock';
 import { inertOthers } from './inert';
 import { isInHigherLayer, isTopLayer, pushLayer, removeLayer } from './layers';
@@ -221,8 +222,19 @@ export class Sheet {
   #timers = new Timers<SheetTimer>();
   #bindings: Cleanup = noop;
   #openEffects: Cleanup = noop;
+  /** Modal interaction effects: inert outside, focus trap, outside press, focus return. */
   #modalEffects: Cleanup = noop;
+  /** Returns focus to where it was before the sheet opened. */
+  #focusReturnEffect: Cleanup = noop;
+  /** Modal scroll lock, kept apart so a close can hold it until the slide-out has finished. */
+  #scrollLockEffect: Cleanup = noop;
+  /** Page side effects of a close, held back until the slide-out has finished (see `#closeSheet`). */
+  #closeEffects: Cleanup = noop;
+  /** Cancels the modal effects of an open that are still waiting for the first frame (see `#openSheet`). */
+  #cancelPendingModal: Cleanup | null = null;
   #releasePreventScroll: Cleanup | null = null;
+  /** This sheet's hold on the Safari body fix (see `#applyPositionFixed`). */
+  #releasePositionFixed: ((preventScrollRestoration?: boolean) => void) | null = null;
   #wrapperOriginal: string | null = null;
   /** Visible part of the wrapper (wrapper-local px), measured when the sheet opens. */
   #wrapperViewport = { top: 0, bottom: 0, height: 0 };
@@ -364,8 +376,11 @@ export class Sheet {
     if (changed('activeSnapPoint') && next.activeSnapPoint != null) this.snapTo(next.activeSnapPoint);
     if (changed('modal') || changed('handleOnly') || changed('dismissible')) this.#setupDom();
     if (this.#state.open && (['modal', 'lockScroll', 'inert', 'noBodyStyles'] as const).some((k) => changed(k))) {
-      this.#modalEffects();
-      this.#modalEffects = this.#applyModalEffects(false);
+      // Still waiting for the first frame: the pending run picks up the new options itself.
+      if (!this.#cancelPendingModal) {
+        this.#releaseModalEffects();
+        this.#modalEffects = this.#applyModalEffects(false);
+      }
     }
     if (changed('repositionInputs') || changed('modal')) this.#updatePreventScroll();
     if (changed('open') && next.open !== undefined) this.#requestOpenChange(next.open, 'api');
@@ -374,11 +389,18 @@ export class Sheet {
   /** Remove all listeners and page side effects. The DOM is left in place. */
   destroy = (): void => {
     if (this.#destroyed) return;
+    this.#dropPendingModal();
+    cancelAnimationFrame(this.#resizeFrame);
+    this.#resizeFrame = 0;
+    this.#flushCloseEffects();
     if (this.#state.open) {
       this.#openEffects();
-      this.#modalEffects();
+      this.#releaseModalEffects();
+      this.#focusReturnEffect();
+      this.#focusReturnEffect = noop;
       this.#releasePreventScroll?.();
-      if (!this.parent) restorePositionFixed();
+      this.#releasePositionFixed?.();
+      this.#releasePositionFixed = null;
     }
     this.#restoreWrapper(true);
     this.#timers.dispose();
@@ -483,7 +505,9 @@ export class Sheet {
 
   #openSheet(reason: ChangeReason, animate: boolean) {
     const { content, overlay } = this;
+    this.#dropPendingModal();
     this.#timers.clear('close');
+    this.#flushCloseEffects(); // reopening during the slide-out: end the previous close first
     const wasClosing = this.#closing;
     this.#closing = false;
     this.#hasBeenOpened = true;
@@ -506,8 +530,25 @@ export class Sheet {
 
     this.#openTime = performance.now();
     this.#openEffects = this.#applyOpenEffects();
-    this.#modalEffects = this.#applyModalEffects(true);
-    this.#updatePreventScroll();
+    // Position fixed, inert, scroll lock and focus force a style recalc of the whole page. Done in the click
+    // handler they would delay the first frame of the slide-in (a transform transition, which then runs off the
+    // main thread anyway).
+    // The body must be fixed before `preventScroll` measures the scroll position, so both wait for the same step.
+    const applyPageEffects = () => {
+      this.#applyPositionFixed();
+      this.#modalEffects = this.#applyModalEffects(true);
+      this.#updatePreventScroll();
+    };
+    // Focus can't wait: iOS only opens the keyboard when focus moves inside the tap handler itself.
+    this.#focusReturnEffect = this.#applyInitialFocus();
+    if (animate) {
+      this.#cancelPendingModal = afterNextFrame(() => {
+        this.#cancelPendingModal = null;
+        applyPageEffects();
+      });
+    } else {
+      applyPageEffects();
+    }
     if (this.parent) this.parent.#onNestedOpenChange(true);
 
     this.#o.onOpenChange?.(true, reason);
@@ -516,6 +557,7 @@ export class Sheet {
 
   #closeSheet(reason: ChangeReason) {
     const { content, overlay } = this;
+    this.#dropPendingModal(); // closed before the first frame: the modal effects never applied
     this.#cancelDrag();
     this.#o.onClose?.();
     this.#closing = true;
@@ -525,12 +567,36 @@ export class Sheet {
     css(content, { transition: this.#transition('transform'), transform: closedTransform(this.#o.direction) });
     css(overlay, { transition: this.#transition('opacity'), opacity: '0' });
 
-    this.#modalEffects();
-    this.#modalEffects = noop;
-    this.#openEffects();
-    this.#openEffects = noop;
+    // A non-modal sheet's early unfix would move the page under the sheet still sliding out: the close unfixes it.
+    this.#timers.clear('positionFixed');
+    this.#restoreWrapper(false); // the scaled background returns together with the slide-out
+    // Off the layer stack now, so the sheet below handles Escape during the slide-out.
+    removeLayer(this.#layer);
+    // Un-inerting the page and returning focus force a style recalc of the whole page: done in this handler they
+    // would delay the first frame of the slide-out, so they wait for that frame. Not longer, so the page (or the
+    // sheet below) takes clicks and focus during the slide-out.
+    // Unlocking scroll and unfixing the body move the page under the sheet: those wait until it is out of view.
+    const modal = this.#modalEffects;
+    const scrollLock = this.#scrollLockEffect;
+    const open = this.#openEffects;
+    const focusReturn = this.#focusReturnEffect;
+    const releasePositionFixed = this.#releasePositionFixed;
+    this.#modalEffects = this.#scrollLockEffect = this.#openEffects = this.#focusReturnEffect = noop;
+    this.#releasePositionFixed = null;
+    let releaseInteraction = () => {
+      releaseInteraction = noop;
+      cancelFrame();
+      modal();
+      focusReturn(); // after un-inerting the page, which may hold the element to return to
+    };
+    const cancelFrame = afterNextFrame(() => releaseInteraction());
+    this.#closeEffects = () => {
+      releaseInteraction();
+      scrollLock();
+      open();
+      releasePositionFixed?.(this.#o.preventScrollRestoration);
+    };
     this.#updatePreventScroll();
-    if (!this.parent) restorePositionFixed(this.#o.preventScrollRestoration);
     if (this.parent) this.parent.#onNestedOpenChange(false);
 
     this.#o.onOpenChange?.(false, reason);
@@ -547,8 +613,26 @@ export class Sheet {
     );
   }
 
+  #releaseModalEffects() {
+    this.#modalEffects();
+    this.#scrollLockEffect();
+    this.#modalEffects = this.#scrollLockEffect = noop;
+  }
+
+  #dropPendingModal() {
+    this.#cancelPendingModal?.();
+    this.#cancelPendingModal = null;
+  }
+
+  #flushCloseEffects() {
+    const run = this.#closeEffects;
+    this.#closeEffects = noop;
+    run();
+  }
+
   #hideImmediately() {
     const { content, overlay } = this;
+    this.#flushCloseEffects();
     content.hidden = true;
     if (overlay) overlay.hidden = true;
     this.#setDataState('closed');
@@ -578,19 +662,12 @@ export class Sheet {
     const layer = this.#layer;
     pushLayer(layer);
 
-    if (!this.parent && !this.#o.noBodyStyles) {
-      setPositionFixed();
-      if (!this.#o.modal) {
-        this.#timers.set('positionFixed', () => restorePositionFixed(this.#o.preventScrollRestoration), 500);
-      }
-    }
     this.#applyScaleBackground();
 
     return chain(
       () => (html.style.scrollBehavior = prevScrollBehavior),
       () => removeLayer(layer),
       () => this.#timers.clear('positionFixed'),
-      () => this.#restoreWrapper(false),
       on(document, 'keydown', (e) => {
         if (e.key === 'Escape' && this.#o.closeOnEscape && isTopLayer(layer) && !e.defaultPrevented) {
           e.preventDefault();
@@ -603,14 +680,27 @@ export class Sheet {
     );
   }
 
-  /** Modal-only effects: scroll lock, inert outside, focus trap, outside press. */
-  #applyModalEffects(initialFocus: boolean): Cleanup {
+  /** Safari: fix the body while the sheet is open. Restored by the close effects (or `destroy`). */
+  #applyPositionFixed() {
+    if (this.parent || this.#o.noBodyStyles) return;
+    const release = setPositionFixed();
+    this.#releasePositionFixed = release;
+    if (!this.#o.modal) {
+      this.#timers.set('positionFixed', () => release(this.#o.preventScrollRestoration), 500);
+    }
+  }
+
+  /**
+   * Modal-only effects: inert outside, focus trap, outside press (returned), scroll lock (`#scrollLockEffect`).
+   * `refocus`: move focus in if the initial focus didn't land (see below).
+   */
+  #applyModalEffects(refocus: boolean): Cleanup {
     const o = this.#o;
     const isTop = () => isTopLayer(this.#layer);
 
     const cleanups: Cleanup[] = [];
     if (o.modal) {
-      if (o.lockScroll) cleanups.push(lockScroll());
+      if (o.lockScroll) this.#scrollLockEffect = lockScroll();
       if (o.inert) cleanups.push(inertOthers([this.content, this.overlay].filter(Boolean) as HTMLElement[]));
       if (o.closeOnOutsidePress) cleanups.push(on(document, 'pointerdown', this.#onDocumentPointerDown, true));
       if (o.trapFocus) {
@@ -624,18 +714,26 @@ export class Sheet {
       }
     }
 
-    if (initialFocus) {
-      const target = o.autoFocus ? (getTabbables(this.content)[0] ?? this.content) : this.content;
-      if (o.modal || o.autoFocus) focus(target);
-    }
+    // Usually focused already (see `#openSheet`). Not when a nested sheet was still inert under its parent.
+    if (refocus && !this.content.contains(document.activeElement)) this.#focusInitial();
 
+    return () => cleanups.forEach((c) => c());
+  }
+
+  /** Move focus into the sheet. Returns the focus return for the close. */
+  #applyInitialFocus(): Cleanup {
+    this.#focusInitial();
     return () => {
-      cleanups.forEach((c) => c());
-      if (!initialFocus) return;
       const active = document.activeElement;
       const focusInside = !active || active === document.body || this.content.contains(active);
-      if (o.restoreFocus && focusInside && this.#returnFocus?.isConnected) focus(this.#returnFocus);
+      if (this.#o.restoreFocus && focusInside && this.#returnFocus?.isConnected) focus(this.#returnFocus);
     };
+  }
+
+  #focusInitial() {
+    const o = this.#o;
+    if (!o.modal && !o.autoFocus) return;
+    focus(o.autoFocus ? (getTabbables(this.content)[0] ?? this.content) : this.content);
   }
 
   #trapTab(e: KeyboardEvent) {
@@ -764,10 +862,16 @@ export class Sheet {
     this.#setActiveIndex(index);
   }
 
+  /** Resize events come in bursts (Safari fires dozens when the body gets fixed): handle them once per frame. */
+  #resizeFrame = 0;
   #onResize = () => {
-    this.#computeSnapOffsets();
-    this.#syncSnapState();
-    if (this.#state.open && !this.#closing && !this.#gesture.pressed && this.#hasSnapPoints) this.#settle(true);
+    if (this.#resizeFrame) return;
+    this.#resizeFrame = requestAnimationFrame(() => {
+      this.#resizeFrame = 0;
+      this.#computeSnapOffsets();
+      this.#syncSnapState();
+      if (this.#state.open && !this.#closing && !this.#gesture.pressed && this.#hasSnapPoints) this.#settle(true);
+    });
   };
 
   // ───────────────────────────── pointer handling ─────────────────────────────
@@ -1172,6 +1276,7 @@ export class Sheet {
       o.modal &&
       !this.#justReleased &&
       this.#hasBeenOpened &&
+      !this.#cancelPendingModal && // not before the body is fixed (see `#openSheet`)
       o.repositionInputs;
     if (enabled && !this.#releasePreventScroll) this.#releasePreventScroll = preventScroll();
     else if (!enabled && this.#releasePreventScroll) {

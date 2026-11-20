@@ -3,8 +3,25 @@ import { isSafari } from '../core';
 
 let previous: Record<string, string> | null = null;
 let lastUrl = typeof window !== 'undefined' ? window.location.href : '';
+/** Open holders of the fix: the body is restored when the last one releases it. */
+let holders = 0;
 
-export function setPositionFixed(): void {
+/**
+ * Fix the body (Safari only). Returns the release: the body is restored when every holder has released it, so one
+ * sheet finishing its slide-out never unfixes the body under another one. Releasing twice counts once.
+ */
+export function setPositionFixed(): (preventScrollRestoration?: boolean) => void {
+  holders++;
+  let released = false;
+  fix();
+  return (preventScrollRestoration = false) => {
+    if (released) return;
+    released = true;
+    if (--holders === 0) restore(preventScrollRestoration);
+  };
+}
+
+function fix(): void {
   if (!isSafari() || previous !== null) return;
   if (window.matchMedia?.('(display-mode: standalone)').matches) return;
 
@@ -33,7 +50,7 @@ export function setPositionFixed(): void {
   );
 }
 
-export function restorePositionFixed(preventScrollRestoration = false): void {
+function restore(preventScrollRestoration: boolean): void {
   if (!isSafari() || previous === null) return;
   const body = document.body;
   const y = -parseInt(body.style.top, 10);

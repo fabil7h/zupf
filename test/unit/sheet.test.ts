@@ -20,6 +20,9 @@ function mount() {
   };
 }
 
+// Page effects of an open (inert, scroll lock, focus) apply once the first frame has been rendered.
+const frame = () => vi.advanceTimersByTime(50);
+
 describe('Sheet', () => {
   let sheet: Sheet;
   beforeEach(() => vi.useFakeTimers());
@@ -59,6 +62,8 @@ describe('Sheet', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true, 'trigger');
     expect(els.content.hidden).toBe(false);
     expect(els.content.dataset.state).toBe('open');
+    expect(els.app.inert).toBeFalsy(); // held back so the first frame of the slide-in is not delayed
+    frame();
     expect(els.app.inert).toBe(true);
     expect(document.documentElement.style.overflow).toBe('hidden');
     expect(document.activeElement).toBe(els.content);
@@ -66,12 +71,19 @@ describe('Sheet', () => {
     els.close.click();
     expect(sheet.isOpen).toBe(false);
     expect(onOpenChange).toHaveBeenLastCalledWith(false, 'close-button');
-    expect(els.app.inert).toBeFalsy();
-    expect(document.documentElement.style.overflow).toBe('');
-    expect(document.activeElement).toBe(els.trigger);
     expect(els.content.hidden).toBe(false); // still animating out
+    // Inert and focus wait for the first frame of the slide-out, so they don't delay it.
+    expect(els.app.inert).toBe(true);
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    frame();
+    // The page takes clicks and focus during the slide-out; the scroll lock holds until it is out of view.
+    expect(els.app.inert).toBeFalsy();
+    expect(document.activeElement).toBe(els.trigger);
+    expect(document.documentElement.style.overflow).toBe('hidden');
 
     vi.advanceTimersByTime(500);
+    expect(document.documentElement.style.overflow).toBe('');
     expect(els.content.hidden).toBe(true);
     expect(onAnimationEnd).toHaveBeenLastCalledWith(false);
   });
@@ -80,6 +92,7 @@ describe('Sheet', () => {
     const els = mount();
     sheet = createSheet({ content: els.content, overlay: els.overlay, dismissible: false });
     sheet.open();
+    frame();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(sheet.isOpen).toBe(true);
 
@@ -89,8 +102,76 @@ describe('Sheet', () => {
 
     vi.advanceTimersByTime(500);
     sheet.open();
+    frame();
     els.overlay.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     expect(sheet.isOpen).toBe(false);
+  });
+
+  it('reopening during the slide-out ends the previous close first and leaves no stuck page state', () => {
+    const els = mount();
+    sheet = createSheet({ content: els.content, overlay: els.overlay, trigger: els.trigger });
+
+    sheet.open();
+    frame();
+    sheet.close();
+    expect(els.app.inert).toBe(true); // close effects still pending
+    sheet.open(); // before the first frame of the slide-out
+    frame();
+    expect(sheet.isOpen).toBe(true);
+    expect(els.app.inert).toBe(true);
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    vi.advanceTimersByTime(500); // the old close timer must not undo the reopen
+    expect(els.app.inert).toBe(true);
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    sheet.close();
+    vi.advanceTimersByTime(500);
+    expect(els.app.inert).toBeFalsy();
+    expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it('closing or destroying before the first frame never applies the page effects', () => {
+    const els = mount();
+    sheet = createSheet({ content: els.content, overlay: els.overlay, trigger: els.trigger });
+    els.trigger.focus();
+    sheet.open();
+    sheet.close();
+    frame();
+    expect(els.app.inert).toBeFalsy();
+    expect(document.documentElement.style.overflow).toBe('');
+    expect(document.activeElement).toBe(els.trigger);
+
+    sheet.open();
+    sheet.destroy();
+    frame();
+    expect(els.app.inert).toBeFalsy();
+    expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it('handles a burst of resize events once per frame, and not after destroy', () => {
+    const els = mount();
+    sheet = createSheet({ content: els.content, overlay: els.overlay, snapPoints: [0.5, 1] });
+    const raf = vi.spyOn(globalThis, 'requestAnimationFrame');
+    for (let i = 0; i < 25; i++) window.dispatchEvent(new Event('resize'));
+    expect(raf).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(50);
+    window.dispatchEvent(new Event('resize'));
+    expect(raf).toHaveBeenCalledTimes(2);
+    sheet.destroy();
+    vi.advanceTimersByTime(50); // the pending frame was cancelled: nothing runs on a destroyed sheet
+    raf.mockRestore();
+  });
+
+  it('destroying during the slide-out releases the page', () => {
+    const els = mount();
+    sheet = createSheet({ content: els.content, overlay: els.overlay });
+    sheet.open();
+    frame();
+    sheet.close();
+    sheet.destroy();
+    expect(els.app.inert).toBeFalsy();
+    expect(document.documentElement.style.overflow).toBe('');
   });
 
   it('non-modal does not make page inert or close on outside press', () => {
@@ -162,6 +243,24 @@ describe('Sheet', () => {
     nested.destroy();
   });
 
+  it('nested: the parent reacts to Escape again while the child is still sliding out', () => {
+    const els = mount();
+    const child = document.createElement('div');
+    document.body.append(child);
+    sheet = createSheet({ content: els.content, overlay: els.overlay });
+    const nested = createSheet({ content: child, parent: sheet });
+    sheet.open();
+    nested.open();
+    frame();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    expect(nested.isOpen).toBe(false);
+    frame(); // child still sliding out
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    expect(sheet.isOpen).toBe(false);
+    nested.destroy();
+  });
+
   it('nested: a child sheet portaled next to its parent is not left inert', () => {
     const els = mount();
     const child = document.createElement('div');
@@ -171,20 +270,26 @@ describe('Sheet', () => {
     const nested = createSheet({ content: child, overlay: childOverlay, parent: sheet });
 
     sheet.open();
+    frame();
     expect(child.inert).toBe(true); // hidden behind the parent
 
     nested.open();
+    frame();
     expect(child.inert).toBe(false);
     expect(childOverlay.inert).toBe(false);
     expect(els.content.inert).toBe(true); // parent is now in the background
     expect(els.app.inert).toBe(true);
 
     nested.close();
+    frame();
+    expect(els.content.inert).toBeFalsy(); // the parent takes clicks during the child's slide-out
+    vi.advanceTimersByTime(500);
     expect(els.content.inert).toBeFalsy();
     expect(child.inert).toBe(true); // back behind the parent
     expect(els.app.inert).toBe(true);
 
     sheet.close();
+    vi.advanceTimersByTime(500);
     expect(child.inert).toBeFalsy();
     expect(els.app.inert).toBeFalsy();
     nested.destroy();
