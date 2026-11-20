@@ -1,0 +1,80 @@
+/*
+ * zupf pull-to-refresh default styles.
+ * Every selector is wrapped in :where() (zero specificity), so any of your own rules win.
+ *
+ * Expected markup: a positioned wrapper holding the indicator and the pulled content.
+ *   <div class="ptr-wrapper">          (position: relative; overflow: hidden)
+ *     <div data-zupf-ptr-indicator>…</div>
+ *     <div id="list">…</div>           (the `content`)
+ *   </div>
+ *
+ * zupf sets `--zupf-ptr-offset` (px) and `--zupf-ptr-progress` (0..1) on both elements,
+ * and `data-state` = idle | pulling | ready | refreshing.
+ * While sliding back to rest the indicator also has `data-settling` = refreshed | cancelled;
+ * the progress variables keep their last value until it is out of view.
+ */
+
+:where([data-zupf-ptr]) {
+  /* Keep the browser's own pull-to-refresh / overscroll glow out of the way. */
+  overscroll-behavior-y: contain;
+}
+
+:where([data-zupf-ptr][data-pulling]) {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:where([data-zupf-ptr-indicator]) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--zupf-ptr-indicator-size, 64px);
+  pointer-events: none;
+  will-change: transform;
+  opacity: var(--zupf-ptr-progress, 0);
+}
+
+:where([data-zupf-ptr-indicator][data-state='refreshing']) {
+  opacity: 1;
+}
+
+/* Fade out while sliding back to rest. */
+:where([data-zupf-ptr-indicator][data-settling]) {
+  opacity: 0;
+}
+
+/* Optional built-in spinner: put <span data-zupf-ptr-spinner></span> inside the indicator. */
+:where([data-zupf-ptr-spinner]) {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--zupf-ptr-spinner-track, rgb(0 0 0 / 0.12));
+  border-top-color: var(--zupf-ptr-spinner-color, currentColor);
+  border-radius: 50%;
+  corner-shape: round;
+  box-sizing: border-box;
+  /* Pull progress uses `rotate`, the spin uses `transform`: they add up, so starting
+     and stopping the spin never jumps. */
+  rotate: calc(var(--zupf-ptr-progress, 0) * 270deg);
+}
+
+:where([data-zupf-ptr-indicator][data-state='refreshing'] [data-zupf-ptr-spinner]),
+:where([data-zupf-ptr-indicator][data-settling='refreshed'] [data-zupf-ptr-spinner]) {
+  animation: zupf-ptr-spin 0.7s linear infinite;
+}
+
+@keyframes zupf-ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-zupf-ptr-indicator][data-state='refreshing'] [data-zupf-ptr-spinner]),
+  :where([data-zupf-ptr-indicator][data-settling='refreshed'] [data-zupf-ptr-spinner]) {
+    animation-duration: 2s;
+  }
+}

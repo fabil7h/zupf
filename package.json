@@ -2,12 +2,13 @@
   "name": "zupf",
   "version": "0.1.0",
   "private": true,
-  "description": "Framework-agnostic, customizable drawer / bottom sheet. A port of vaul.",
+  "description": "Framework-agnostic, customizable drawer / bottom sheet and pull-to-refresh. Drawer is a port of vaul.",
   "keywords": [
     "bottom-sheet",
     "dialog",
     "drawer",
     "framework-agnostic",
+    "pull-to-refresh",
     "sheet",
     "vanilla"
   ],
@@ -26,7 +27,8 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./pull-to-refresh.css": "./dist/pull-to-refresh.css"
   },
   "scripts": {
     "dev": "vp dev docs",

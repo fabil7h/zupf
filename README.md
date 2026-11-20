@@ -1,8 +1,8 @@
 # zupf
 
-A framework-agnostic, customizable drawer / bottom sheet. Ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
+A framework-agnostic, customizable drawer / bottom sheet, plus pull-to-refresh built on the same gestures. The drawer is ported from [vaul](https://github.com/emilkowalski/vaul): same gestures and physics, but with no React and no Radix.
 
-- Zero dependencies, about 9 KB gzipped
+- Zero dependencies, about 11 KB gzipped
 - Works with plain HTML, React, Vue, Svelte, Solid, Lit and others: you render the markup, zupf adds the behavior
 - Snap points, four directions, nested sheets, scaled background, non-modal mode, handle-only dragging
 - Built-in accessibility: `role="dialog"`, focus trap, focus restore, Esc, outside press, `inert` background, scroll lock
@@ -141,6 +141,37 @@ Callbacks:
 ```
 
 Your own selectors override the defaults no matter how specific they are. You can also skip `style.css` completely. In that case keep `touch-action: none` on the content element, and hide `[hidden]` elements.
+
+## Pull to refresh
+
+```html
+<div class="ptr-wrapper" style="position: relative; overflow: hidden">
+  <div data-zupf-ptr-indicator><span data-zupf-ptr-spinner></span></div>
+  <ul id="list" style="height: 100%; overflow: auto">
+    …
+  </ul>
+</div>
+```
+
+```js
+import { createPullToRefresh } from 'zupf';
+import 'zupf/pull-to-refresh.css'; // optional defaults
+
+const ptr = createPullToRefresh({
+  content: '#list',
+  onRefresh: () => loadNewItems(), // return a promise to keep the indicator until it settles
+});
+```
+
+It uses the drawer's gesture handling: pulls only start when the list is scrolled to the top and the finger moves down, sideways swipes stay native, and the native scroll / browser pull-to-refresh is cancelled only while pulling.
+
+Options: `content`, `indicator` (default `[data-zupf-ptr-indicator]` next to the content), `scroller` (element or selector; default: content if it scrolls, else nearest scrollable ancestor or the page), `onRefresh`, `threshold` (64), `max` (150), `refreshingOffset` (threshold), `mouse` (false), `disabled` (false), `duration` (300), `easing`, `onPull(offset, progress)`, `onStatusChange(status)`.
+
+Areas inside the content marked `data-zupf-no-drag` never start a pull. Inside a drawer, put `data-zupf-no-drag` on the list so pulling refreshes instead of dragging the sheet.
+
+Instance: `refresh()`, `setOptions(partial)`, `getState()` → `{ status }` (`idle` | `pulling` | `ready` | `refreshing`), `subscribe(fn)`, `destroy()`, `status`.
+
+Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshed` | `cancelled`) on the indicator while it slides back, `data-pulling` on content, `--zupf-ptr-offset` / `--zupf-ptr-progress` custom properties, `--zupf-ptr-indicator-size`, `--zupf-ptr-spinner-color`.
 
 ## Framework recipes
 
