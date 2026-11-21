@@ -1,4 +1,5 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "zupf",
   "compatibility_date": "2026-11-20",
   "workers_dev": false,
