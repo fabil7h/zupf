@@ -25,8 +25,21 @@ const features = [
   },
 ];
 
-export function Landing() {
-  const drawerTrigger = useRef<HTMLButtonElement>(null);
+const indicatorLabel: Record<PullStatus, string> = {
+  idle: 'Pull to refresh',
+  pulling: 'Pull to refresh',
+  ready: 'Release to refresh',
+  refreshing: 'Refreshing…',
+};
+
+function buttonLabel(status: PullStatus, justRefreshed: boolean): string {
+  if (status === 'refreshing') return 'Refreshing…';
+  if (status === 'ready') return 'Release to refresh';
+  return justRefreshed ? 'Refreshed' : 'Try pull-to-refresh';
+}
+
+/** Pull-to-refresh on the hero, with a short "Refreshed" confirmation afterwards. */
+function useHeroRefresh() {
   const refreshContent = useRef<HTMLElement>(null);
   const pullToRefresh = useRef<PullToRefresh | null>(null);
   const resetRefreshMessage = useRef<number | undefined>(undefined);
@@ -34,11 +47,7 @@ export function Landing() {
   const [justRefreshed, setJustRefreshed] = useState(false);
 
   useEffect(() => {
-    document.title = 'zupf';
-  }, []);
-
-  useEffect(() => {
-    if (!refreshContent.current) return;
+    if (!refreshContent.current) return undefined;
 
     let active = true;
     const instance = createPullToRefresh({
@@ -64,26 +73,40 @@ export function Landing() {
     };
   }, []);
 
-  const refreshLabel =
-    pullStatus === 'refreshing'
-      ? 'Refreshing…'
-      : pullStatus === 'ready'
-        ? 'Release to refresh'
-        : justRefreshed
-          ? 'Refreshed'
-          : 'Try pull-to-refresh';
+  return { refreshContent, pullToRefresh, pullStatus, justRefreshed };
+}
+
+function FeatureLinks() {
+  return (
+    <ul class="mt-10 grid grid-cols-3 gap-3 text-left max-md:grid-cols-1">
+      {features.map((f) => (
+        <li key={f.slug}>
+          <a
+            href={href(f.slug, f.anchor)}
+            class="grid h-full gap-1 rounded-xl border border-line bg-canvas px-4 py-3.5 text-[13px] leading-[1.45] text-muted transition-ui hover:border-line-strong hover:bg-surface active:scale-[0.98] active:duration-[80ms] fine-pointer:hover:-translate-y-0.5"
+          >
+            <strong class="text-sm font-semibold text-fg">{f.title}</strong>
+            <span>{f.text}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function Landing() {
+  const drawerTrigger = useRef<HTMLButtonElement>(null);
+  const { refreshContent, pullToRefresh, pullStatus, justRefreshed } = useHeroRefresh();
+
+  useEffect(() => {
+    document.title = 'zupf';
+  }, []);
 
   return (
     <div data-zupf-wrapper class="relative min-h-screen overflow-hidden bg-canvas">
       <div data-zupf-ptr-indicator class="gap-2 text-xs font-medium text-muted">
         <span data-zupf-ptr-spinner class="text-fg" />
-        <span>
-          {pullStatus === 'ready'
-            ? 'Release to refresh'
-            : pullStatus === 'refreshing'
-              ? 'Refreshing…'
-              : 'Pull to refresh'}
-        </span>
+        <span>{indicatorLabel[pullStatus]}</span>
       </div>
       <main
         ref={refreshContent}
@@ -109,25 +132,13 @@ export function Landing() {
               disabled={pullStatus === 'refreshing'}
               onClick={() => void pullToRefresh.current?.refresh()}
             >
-              {refreshLabel}
+              {buttonLabel(pullStatus, justRefreshed)}
             </button>
             <span class="sr-only" aria-live="polite">
               {justRefreshed ? 'Page refreshed' : ''}
             </span>
           </div>
-          <ul class="mt-10 grid grid-cols-3 gap-3 text-left max-md:grid-cols-1">
-            {features.map((f) => (
-              <li key={f.slug}>
-                <a
-                  href={href(f.slug, f.anchor)}
-                  class="grid h-full gap-1 rounded-xl border border-line bg-canvas px-4 py-3.5 text-[13px] leading-[1.45] text-muted transition-ui hover:border-line-strong hover:bg-surface active:scale-[0.98] active:duration-[80ms] fine-pointer:hover:-translate-y-0.5"
-                >
-                  <strong class="text-sm font-semibold text-fg">{f.title}</strong>
-                  <span>{f.text}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+          <FeatureLinks />
           <div class="mt-8 flex items-center justify-center gap-6">
             <a class="secondary-link" href={href('getting-started')}>
               Documentation

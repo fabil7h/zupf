@@ -1,10 +1,8 @@
 import { LocationProvider, Route, Router } from 'preact-iso';
 import { useEffect } from 'preact/hooks';
-import { Example } from './components/Example';
-import { Landing } from './components/Landing';
 import { Header, Nav, Pager, Toc, useActiveSection } from './components/Layout';
 import type { Page } from './examples';
-import { pages } from './pages';
+import { Landing, pages } from './pages';
 import { useDocRoute } from './router';
 
 function PageView({ page }: { page: Page }) {
@@ -16,10 +14,26 @@ function PageView({ page }: { page: Page }) {
   }, [page]);
 
   // The router scrolls to the top on navigation; anchors are ours to handle.
+  // Page bodies load lazily: on client navigation the target may not exist yet, so wait for it.
   useEffect(() => {
-    if (!anchor) return;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.getElementById(anchor)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+    if (!anchor) return undefined;
+    const scrollTo = (target: HTMLElement) => {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+    };
+    const target = document.getElementById(anchor);
+    if (target) {
+      scrollTo(target);
+      return undefined;
+    }
+    const observer = new MutationObserver(() => {
+      const appeared = document.getElementById(anchor);
+      if (!appeared) return;
+      observer.disconnect();
+      scrollTo(appeared);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, [page, anchor]);
 
   return (
@@ -27,7 +41,7 @@ function PageView({ page }: { page: Page }) {
       <article>
         <h1>{page.title}</h1>
         {page.intro && <p class="text-base text-muted" dangerouslySetInnerHTML={{ __html: page.intro }} />}
-        {page.Component ? <page.Component /> : page.examples?.map((ex) => <Example key={ex.id} ex={ex} />)}
+        <page.Component />
         <Pager page={page} />
       </article>
     </main>

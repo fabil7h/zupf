@@ -10,6 +10,7 @@ import {
 } from '../../src';
 import { Section } from '../components/Section';
 import { Table, Text } from '../components/Text';
+import { useInViewport } from '../useInViewport';
 
 /** Fills over holdTime (500ms) while pressed; solid once it is a hold. */
 const HoldBar = () => (
@@ -27,7 +28,9 @@ function useGestures(
 ): { gestures: Gestures | null; state: GesturesState } {
   const [gestures, setGestures] = useState<Gestures | null>(null);
   const [state, setState] = useState<GesturesState>(IDLE);
+  const visible = useInViewport(target);
   useLayoutEffect(() => {
+    if (!visible) return undefined;
     const instance = createGestures({ ...options, target: target.current! });
     const unsubscribe = instance.subscribe(setState);
     setGestures(instance);
@@ -36,7 +39,7 @@ function useGestures(
       instance.destroy();
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once on mount; demos recreate via `key`
-  }, []);
+  }, [visible]);
   return { gestures, state };
 }
 
@@ -323,6 +326,129 @@ const itemId = (target: EventTarget | null) =>
 /** Deleting is destructive: a long, deliberate swipe after the hold. */
 const HOLD_SWIPE_DISTANCE = 120;
 
+/**
+ * Slide the row out from wherever it is (dragged or open), then collapse it, and only remove it once that has
+ * finished. Following rows move with `translate`, so the collapse stays compositor-friendly.
+ */
+/** A row being dragged after a hold: where the press started, its item and the row that moves. */
+interface RowDrag {
+  x: number;
+  li: HTMLElement;
+  row: HTMLElement;
+}
+
+/** Follow the pointer and show which action a release would run. */
+function moveRow({ x, li, row }: RowDrag, clientX: number) {
+  const dx = clientX - x;
+  row.style.transition = 'none';
+  row.style.translate = `${dx}px`;
+  li.dataset.peek = dx < 0 ? 'delete' : 'archive';
+  li.style.setProperty('--progress', String(Math.min(Math.abs(dx) / HOLD_SWIPE_DISTANCE, 1)));
+}
+
+/** Back to rest via the CSS transition. */
+function resetRow({ li, row }: RowDrag) {
+  row.style.removeProperty('translate');
+  row.style.removeProperty('transition');
+  li.style.removeProperty('--progress');
+  delete li.dataset.peek;
+}
+
+async function animateOut(list: HTMLElement | null, id: number, dir: 'left' | 'right') {
+  const li = list?.querySelector<HTMLElement>(`li[data-id="${id}"]`);
+  const row = li?.querySelector<HTMLElement>('[data-row]');
+  if (!li || !row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const from = getComputedStyle(row).translate;
+  row.style.transition = 'none'; // the snap-back transition mustn't fight the animation
+  li.style.removeProperty('--progress');
+  delete li.dataset.peek;
+  const animations: Animation[] = [];
+  try {
+    const exit = row.animate(
+      [{ translate: from === 'none' ? '0px' : from }, { translate: dir === 'left' ? '-101%' : '101%' }],
+      { duration: 250, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' },
+    );
+    animations.push(exit);
+    await exit.finished;
+    const height = li.offsetHeight;
+    const children = Array.from(li.parentElement?.children ?? []);
+    const siblings = children
+      .slice(children.indexOf(li) + 1)
+      .filter((element): element is HTMLElement => element instanceof HTMLElement);
+    const collapse = [
+      // Opacity, not clip-path: stays on the compositor. Rows below slide up over it anyway.
+      li.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 200,
+        easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+        fill: 'forwards',
+      }),
+      ...siblings.map((sibling) =>
+        sibling.animate([{ translate: '0 0' }, { translate: `0 -${height}px` }], {
+          duration: 200,
+          easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+          fill: 'forwards',
+          // Adds up with the collapse of a row above that is still running (several rows removed in a row).
+          composite: 'add',
+        }),
+      ),
+    ];
+    animations.push(...collapse);
+    await Promise.all(collapse.map((animation) => animation.finished));
+  } catch {
+    /* cancelled, e.g. the element went away */
+  } finally {
+    for (const animation of animations) animation.cancel();
+  }
+}
+
+interface MailRowProps {
+  mail: Mail;
+  swipeActions: boolean;
+  active: boolean;
+  open: boolean;
+  leaving?: true;
+  removed?: MailAction;
+}
+
+function MailRow({ mail, swipeActions, active, open, leaving, removed }: MailRowProps) {
+  return (
+    <li
+      class="mail-item group/item"
+      data-id={mail.id}
+      data-active={active || undefined}
+      data-open={open || undefined}
+      data-leaving={leaving}
+      data-removed={removed}
+    >
+      <div
+        data-row
+        class="relative z-1 grid gap-0.5 bg-canvas px-4 py-3 [transition:translate_250ms_var(--ease-ios),background_150ms] group-data-open/item:-translate-x-[192px] group-data-holding/list:group-data-active/item:bg-surface motion-reduce:transition-none!"
+      >
+        <span class="text-sm font-semibold">
+          {mail.from} {mail.starred && <span aria-label="starred">★</span>}
+        </span>
+        <span class="text-[13px] text-muted">{mail.subject}</span>
+      </div>
+      {swipeActions && (
+        <div
+          class="invisible absolute inset-y-0 right-0 flex [transition:visibility_0s_250ms] group-data-open/item:visible group-data-open/item:transition-none"
+          inert={!open}
+        >
+          <button class="swipe-action bg-warning" data-action="star">
+            {mail.starred ? 'Unstar' : 'Star'}
+          </button>
+          <button class="swipe-action bg-info" data-action="archive">
+            Archive
+          </button>
+          <button class="swipe-action bg-danger" data-action="delete">
+            Delete
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
 function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string }) {
   const list = useRef<HTMLUListElement>(null);
   const [mails, setMails] = useState(MAILS);
@@ -333,66 +459,12 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
   const [leaving, setLeaving] = useState<Record<number, true>>({});
   const [removed, setRemoved] = useState<Record<number, MailAction>>({});
   /** Hold mode: the row being dragged after a hold. Moved via inline styles, so moves don't re-render. */
-  const drag = useRef<{ x: number; li: HTMLElement; row: HTMLElement } | null>(null);
+  const drag = useRef<RowDrag | null>(null);
   /** Let the row go: back to rest (CSS transition), or into the leave animation from where it is. */
   const releaseDrag = () => {
     const d = drag.current;
     drag.current = null;
-    if (!d) return;
-    d.row.style.removeProperty('translate');
-    d.row.style.removeProperty('transition');
-    d.li.style.removeProperty('--progress');
-    delete d.li.dataset.peek;
-  };
-  /**
-   * Slide the row out from wherever it is (dragged or open), then collapse it, and only remove it once that has
-   * finished. Following rows move with `translate`, so the collapse stays compositor-friendly.
-   */
-  const animateOut = async (id: number, dir: 'left' | 'right') => {
-    const li = list.current?.querySelector<HTMLElement>(`li[data-id="${id}"]`);
-    const row = li?.querySelector<HTMLElement>('[data-row]');
-    if (!li || !row || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const from = getComputedStyle(row).translate;
-    row.style.transition = 'none'; // the snap-back transition mustn't fight the animation
-    li.style.removeProperty('--progress');
-    delete li.dataset.peek;
-    const animations: Animation[] = [];
-    try {
-      const exit = row.animate(
-        [{ translate: from === 'none' ? '0px' : from }, { translate: dir === 'left' ? '-101%' : '101%' }],
-        { duration: 250, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' },
-      );
-      animations.push(exit);
-      await exit.finished;
-      const height = li.offsetHeight;
-      const children = Array.from(li.parentElement?.children ?? []);
-      const siblings = children
-        .slice(children.indexOf(li) + 1)
-        .filter((element): element is HTMLElement => element instanceof HTMLElement);
-      const collapse = [
-        // Opacity, not clip-path: stays on the compositor. Rows below slide up over it anyway.
-        li.animate([{ opacity: 1 }, { opacity: 0 }], {
-          duration: 200,
-          easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
-          fill: 'forwards',
-        }),
-        ...siblings.map((sibling) =>
-          sibling.animate([{ translate: '0 0' }, { translate: `0 -${height}px` }], {
-            duration: 200,
-            easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
-            fill: 'forwards',
-            // Adds up with the collapse of a row above that is still running (several rows removed in a row).
-            composite: 'add',
-          }),
-        ),
-      ];
-      animations.push(...collapse);
-      await Promise.all(collapse.map((animation) => animation.finished));
-    } catch {
-      /* cancelled, e.g. the element went away */
-    } finally {
-      for (const animation of animations) animation.cancel();
-    }
+    if (d) resetRow(d);
   };
   const run = useRef((id: number, action: MailAction, via: string) => {
     // The press that removes the row ends here: keep its position, the exit animation continues from it.
@@ -406,7 +478,7 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
     // Slide out the way it was swiped (open swipe actions always slide left), then collapse and remove.
     setLeaving((prev) => ({ ...prev, [id]: true }));
     setRemoved((prev) => ({ ...prev, [id]: action }));
-    void animateOut(id, swipeActions || action === 'delete' ? 'left' : 'right').then(() => {
+    void animateOut(list.current, id, swipeActions || action === 'delete' ? 'left' : 'right').then(() => {
       setMails((prev) => applyAction(prev, id, action));
       setLeaving((prev) => {
         const next = { ...prev };
@@ -468,54 +540,22 @@ function MailList({ swipeActions, hint }: { swipeActions: boolean; hint: string 
           if (!swipeActions && li && row) drag.current = { x: e.clientX, li, row };
         }}
         onPointerMove={(e) => {
-          const d = drag.current;
-          if (!d || !list.current?.hasAttribute('data-holding')) return;
-          const dx = e.clientX - d.x;
-          d.row.style.transition = 'none';
-          d.row.style.translate = `${dx}px`;
-          d.li.dataset.peek = dx < 0 ? 'delete' : 'archive';
-          d.li.style.setProperty('--progress', String(Math.min(Math.abs(dx) / HOLD_SWIPE_DISTANCE, 1)));
+          if (drag.current && list.current?.hasAttribute('data-holding')) moveRow(drag.current, e.clientX);
         }}
         onPointerUp={releaseDrag}
         onPointerCancel={releaseDrag}
         onClick={onClick}
       >
         {mails.map((m) => (
-          <li
+          <MailRow
             key={m.id}
-            class="mail-item group/item"
-            data-id={m.id}
-            data-active={m.id === active || undefined}
-            data-open={m.id === open || undefined}
-            data-leaving={leaving[m.id]}
-            data-removed={removed[m.id]}
-          >
-            <div
-              data-row
-              class="relative z-1 grid gap-0.5 bg-canvas px-4 py-3 [transition:translate_250ms_var(--ease-ios),background_150ms] group-data-open/item:-translate-x-[192px] group-data-holding/list:group-data-active/item:bg-surface motion-reduce:transition-none!"
-            >
-              <span class="text-sm font-semibold">
-                {m.from} {m.starred && <span aria-label="starred">★</span>}
-              </span>
-              <span class="text-[13px] text-muted">{m.subject}</span>
-            </div>
-            {swipeActions && (
-              <div
-                class="invisible absolute inset-y-0 right-0 flex [transition:visibility_0s_250ms] group-data-open/item:visible group-data-open/item:transition-none"
-                inert={m.id !== open}
-              >
-                <button class="swipe-action bg-warning" data-action="star">
-                  {m.starred ? 'Unstar' : 'Star'}
-                </button>
-                <button class="swipe-action bg-info" data-action="archive">
-                  Archive
-                </button>
-                <button class="swipe-action bg-danger" data-action="delete">
-                  Delete
-                </button>
-              </div>
-            )}
-          </li>
+            mail={m}
+            swipeActions={swipeActions}
+            active={m.id === active}
+            open={m.id === open}
+            leaving={leaving[m.id]}
+            removed={removed[m.id]}
+          />
         ))}
         {!mails.length && <li class="mail-item group/item px-4 py-3 text-[13px] text-muted">Inbox zero.</li>}
       </ul>
@@ -672,15 +712,6 @@ gestures.subscribe(({ pressed, steps }) => {
 }
 
 // ───────────────────────────── page ─────────────────────────────
-
-export const gesturesToc = [
-  { id: 'taps', title: 'Taps and long press' },
-  { id: 'list', title: 'Swipe actions in a list' },
-  { id: 'custom', title: 'Custom flows' },
-  { id: 'swipes', title: 'Swipes' },
-  { id: 'patterns', title: 'Patterns' },
-  { id: 'options', title: 'Options' },
-];
 
 export function GesturesPage() {
   return (

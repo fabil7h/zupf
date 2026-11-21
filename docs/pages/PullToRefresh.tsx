@@ -21,6 +21,7 @@ import {
 } from '../components/PtrContent';
 import { Section } from '../components/Section';
 import { Table } from '../components/Text';
+import { useInViewport } from '../useInViewport';
 
 // ───────────────────────────── demo helpers ─────────────────────────────
 
@@ -34,7 +35,9 @@ function usePullToRefresh(
 ): { ptr: PullToRefresh | null; status: PullStatus } {
   const [ptr, setPtr] = useState<PullToRefresh | null>(null);
   const [status, setStatus] = useState<PullStatus>('idle');
+  const visible = useInViewport(content);
   useLayoutEffect(() => {
+    if (!visible) return undefined;
     let instance: PullToRefresh | undefined;
     instance = createPullToRefresh({
       mouse: true,
@@ -53,7 +56,7 @@ function usePullToRefresh(
     };
     // Options are applied once; demos recreate the instance (via `key`) or call setOptions().
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once on mount; options are inline objects
-  }, []);
+  }, [visible]);
   return { ptr, status };
 }
 
@@ -1012,18 +1015,6 @@ ${barJs}  onRefresh: loadNotifications,
 }
 
 // ───────────────────────────── page ─────────────────────────────
-
-export const pullToRefreshToc = [
-  { id: 'basic', title: 'Basic' },
-  { id: 'blog', title: 'Indicator styles' },
-  { id: 'drawer', title: 'In a drawer' },
-  { id: 'dashboard', title: 'Dashboard' },
-  { id: 'widgets', title: 'Small containers' },
-  { id: 'nested', title: 'Nested content' },
-  { id: 'tuning', title: 'Threshold and feel' },
-  { id: 'api', title: 'Controlling it' },
-  { id: 'options', title: 'Options' },
-];
 
 export function PullToRefreshPage() {
   return (

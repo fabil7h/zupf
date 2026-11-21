@@ -126,7 +126,7 @@ const activeSection = signal<{ slug: string; id: string } | null>(null);
 /** Tracks the section in view and keeps the URL hash in sync. Call once per page. */
 export function useActiveSection(page: Page) {
   useEffect(() => {
-    const examples = page.toc ?? page.examples ?? [];
+    const examples = page.toc ?? [];
     let frame = 0;
     let measureFrame = 0;
     let syncTimer = 0;
@@ -209,7 +209,7 @@ export function useActiveSection(page: Page) {
 }
 
 export function Toc({ page }: { page: Page }) {
-  const examples = page.toc ?? page.examples ?? [];
+  const examples = page.toc ?? [];
   const active = activeSection.value;
   const activeId = active?.slug === page.slug ? active.id : (examples[0]?.id ?? '');
 

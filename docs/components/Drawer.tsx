@@ -3,6 +3,7 @@
 import { createContext, createPortal, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { createSheet, type Sheet, type SheetOptions, type SheetState } from '../../src';
+import { useInViewport } from '../useInViewport';
 
 /** The sheet a component is rendered inside of; used to wire up nested sheets. */
 export const SheetContext = createContext<Sheet | null>(null);
@@ -30,9 +31,10 @@ export function Drawer({ id, options, trigger, nested, noHandle, class: classNam
   // Portals need `document.body`: render nothing on the server and on the first client render (hydration).
   const [mounted, setMounted] = useState(false);
   useLayoutEffect(() => setMounted(true), []);
+  const visible = useInViewport(trigger);
 
   useLayoutEffect(() => {
-    if (!mounted || waitingForParent) return undefined;
+    if (!mounted || !visible || waitingForParent) return undefined;
     const s = createSheet({
       ...options,
       content: content.current!,
@@ -45,7 +47,7 @@ export function Drawer({ id, options, trigger, nested, noHandle, class: classNam
     return () => s.destroy();
     // Options are applied once; use sheet.setOptions() for runtime changes.
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- create once per mount; props are inline objects, recreating would reset the sheet
-  }, [mounted, waitingForParent]);
+  }, [mounted, visible, waitingForParent]);
 
   if (!mounted || waitingForParent) return null;
 

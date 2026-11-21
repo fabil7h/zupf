@@ -2,6 +2,8 @@ import prerender, { locationStub } from 'preact-iso/prerender';
 import { App, titleFor } from './app';
 import { pages } from './pages';
 
+export { routeModules } from './pages';
+
 /** Every route to prerender. */
 export const routes = ['/', ...pages.map((p) => `/${p.slug}/`)];
 

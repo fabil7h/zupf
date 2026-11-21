@@ -42,14 +42,18 @@ export interface Page {
   title: string;
   group: 'Usage';
   intro?: string;
-  examples?: Example[];
-  /** "On this page" entries for custom pages; defaults to `examples`. */
+  /** "On this page" entries. */
   toc?: { id: string; title: string }[];
-  /** Custom page body. */
-  Component?: () => JSX.Element;
+  /** Page body. */
+  Component: () => JSX.Element;
 }
 
-type ExampleSection = Pick<Page, 'slug' | 'title' | 'intro' | 'examples'>;
+interface ExampleSection {
+  slug: string;
+  title: string;
+  intro?: string;
+  examples?: Example[];
+}
 
 const lorem = `<p>Drag, flick or snap me. You render the markup, zupf adds the behavior.</p>`;
 

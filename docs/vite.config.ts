@@ -6,5 +6,6 @@ export default defineConfig({
   // Served from the domain root: pages are real paths (`/drawer/`).
   oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },
   plugins: [tailwindcss()],
-  build: { outDir: '../docs-dist', emptyOutDir: true, target: 'es2022' },
+  // The manifest maps lazy route modules to chunks for prerender's modulepreload links; prerender deletes it.
+  build: { outDir: '../docs-dist', emptyOutDir: true, target: 'es2022', manifest: true },
 });

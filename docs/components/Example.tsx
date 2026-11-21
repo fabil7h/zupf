@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import type { Sheet, SheetOptions } from '../../src';
 import { exampleCode, resolveOptions } from '../codegen';
 import type { Example as ExampleDef } from '../examples';
@@ -59,8 +59,8 @@ export function Example({ ex: base }: { ex: ExampleDef }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [variant, setVariant] = useState(0);
-  const ex = withVariant(base, variant);
-  const { js, html, css } = exampleCode(ex);
+  const ex = useMemo(() => withVariant(base, variant), [base, variant]);
+  const { js, html, css } = useMemo(() => exampleCode(ex), [ex]);
   const tabs: CodeTab[] = [
     { label: 'JavaScript', lang: 'js', code: js },
     { label: 'HTML', lang: 'html', code: html },
