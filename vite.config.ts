@@ -153,6 +153,10 @@ export default defineConfig({
         test: { name: 'unit', include: ['test/unit/**/*.test.ts'], environment: 'jsdom' },
       },
       {
+        // Bundle size budgets (gzip), including per-export tree-shaking.
+        test: { name: 'size', include: ['test/size/**/*.test.ts'], environment: 'node' },
+      },
+      {
         test: {
           name: 'browser',
           include: ['test/browser/**/*.test.ts'],
@@ -162,6 +166,19 @@ export default defineConfig({
             provider: playwright(),
             instances: [{ browser: 'chromium', viewport: { width: 430, height: 860 } }],
             commands: { drag },
+          },
+        },
+      },
+      {
+        // Main-thread work budgets (forced layouts / style recalcs) measured via CDP. Chromium only.
+        test: {
+          name: 'perf',
+          include: ['test/perf/**/*.test.ts'],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: 'chromium', viewport: { width: 430, height: 860 } }],
           },
         },
       },

@@ -43,6 +43,8 @@
     "test": "vp test",
     "test:unit": "vp test --project unit",
     "test:browser": "vp test --project browser",
+    "test:perf": "vp test --project perf",
+    "test:size": "vp test --project size",
     "prepublishOnly": "vp check && vp test && vp pack"
   },
   "devDependencies": {
