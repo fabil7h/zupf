@@ -1,6 +1,6 @@
 {
   "name": "@lzth/zupf",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native-feeling drawer / bottom sheet, pull-to-refresh and gestures for any framework.",
   "keywords": [
     "angular",
