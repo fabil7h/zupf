@@ -118,7 +118,7 @@ list.addEventListener('pointerup', () => {
 /* Highlight the held item: the list gets data-holding,
    the app marks the pressed item itself. */
 #mails[data-holding] li[data-active] .row {
-  background: var(--bg-subtle);
+  background: #f4f4f5;
 }`,
   },
 ];

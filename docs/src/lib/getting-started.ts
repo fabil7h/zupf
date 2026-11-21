@@ -77,7 +77,11 @@ export function Drawer({ trigger, children }) {
   );
 }`;
 
-export const react = `function Drawer({ trigger, children }) {
+export const react = `import { useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { createSheet } from 'zupf';
+
+export function Drawer({ trigger, children }) {
   const content = useRef(null);
   const overlay = useRef(null);
 
@@ -103,6 +107,9 @@ export const react = `function Drawer({ trigger, children }) {
 }`;
 
 export const vue = `<script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { createSheet } from 'zupf';
+
 const content = ref();
 const overlay = ref();
 let sheet;
