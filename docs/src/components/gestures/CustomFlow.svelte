@@ -14,7 +14,7 @@
   const pattern = $derived(presets[selected]);
 
   const code = presets.map((p) => ({
-    js: `import { createGestures } from 'zupf';
+    js: `import { createGestures } from '@lzth/zupf';
 
 const gestures = createGestures({ target: '#pad' });
 

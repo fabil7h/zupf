@@ -1,6 +1,6 @@
 import type { Component } from 'svelte';
 import { untrack } from 'svelte';
-import { createPullToRefresh, type PullStatus, type PullToRefresh, type PullToRefreshOptions } from 'zupf';
+import { createPullToRefresh, type PullStatus, type PullToRefresh, type PullToRefreshOptions } from '@lzth/zupf';
 import { blogData, inboxData, notificationsData, wait, type Blog as BlogState, type Mail, type Note } from './data';
 import Blog from './views/Blog.svelte';
 import Inbox from './views/Inbox.svelte';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Sheet, SheetOptions } from 'zupf';
+  import type { Sheet, SheetOptions } from '@lzth/zupf';
   import { resolveOptions } from '../../lib/codegen';
   import type { Example } from '../../lib/examples';
   import { styleTag } from '../../lib/text';

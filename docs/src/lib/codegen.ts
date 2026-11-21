@@ -43,8 +43,8 @@ export function exampleCode(ex: Example): { js: string; html: string; css?: stri
       .concat([`  parent: sheet,`, `});`]),
   );
   const js = [
-    `import { createSheet } from 'zupf';`,
-    `import 'zupf/style.css';`,
+    `import { createSheet } from '@lzth/zupf';`,
+    `import '@lzth/zupf/style.css';`,
     '',
     `const sheet = createSheet({`,
     `  content: '#sheet',`,

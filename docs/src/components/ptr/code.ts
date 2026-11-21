@@ -1,5 +1,5 @@
 // Code shown in the pull-to-refresh demos' tabs (and the CSS they apply live).
-import type { PullToRefreshBehavior } from 'zupf';
+import type { PullToRefreshBehavior } from '@lzth/zupf';
 
 export const listHtml = (id = 'list') => `<ul id="${id}">
     <li>…</li>
@@ -64,8 +64,8 @@ export const barJs = `  refreshingOffset: 4, // rest right below the 4px bar, no
 `;
 
 export const basicCode = {
-  js: `import { createPullToRefresh } from 'zupf';
-import 'zupf/pull-to-refresh.css';
+  js: `import { createPullToRefresh } from '@lzth/zupf';
+import '@lzth/zupf/pull-to-refresh.css';
 
 const ptr = createPullToRefresh({
   content: '#list',

@@ -23,7 +23,7 @@ export const listModes = [
     hint: 'Swipe an item left for actions, right to close. Double tap to star.',
     description:
       'Mail-app swipe actions with one instance for the whole list: find the item from `e.target`. Only horizontal swipes are bound, so the list still scrolls natively.',
-    js: `import { createGestures } from 'zupf';
+    js: `import { createGestures } from '@lzth/zupf';
 
 const list = document.querySelector('#mails');
 const item = (e) => e.target.closest('li');
@@ -78,7 +78,7 @@ list.addEventListener('click', (e) => {
     hint: 'Hold an item, then swipe left (delete) or right (archive). Double tap to star.',
     description:
       'Swipes after a `hold` never block scrolling: the page only stays still once a press holds. While held, the row follows the pointer (plain `pointermove` plus the `data-holding` hook).',
-    js: `import { createGestures } from 'zupf';
+    js: `import { createGestures } from '@lzth/zupf';
 
 const list = document.querySelector('#mails');
 const item = (e) => e.target.closest('li');

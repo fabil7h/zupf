@@ -1,4 +1,4 @@
-import type { Sheet, SheetOptions } from 'zupf';
+import type { Sheet, SheetOptions } from '@lzth/zupf';
 
 /** A value shown as source code in the docs while a real value is used at runtime. */
 export class Raw<T = unknown> {

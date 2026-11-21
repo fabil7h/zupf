@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import type { Sheet } from 'zupf';
+  import type { Sheet } from '@lzth/zupf';
 
   /** The sheet a component is rendered inside of; used to wire up nested sheets. */
   const KEY = Symbol('sheet');
@@ -11,7 +11,7 @@
 <script lang="ts">
   // How you'd wrap zupf in Svelte: render the markup, create the sheet in an effect, destroy it on teardown.
   import { getContext, setContext, untrack, type Snippet } from 'svelte';
-  import { createSheet, type SheetOptions } from 'zupf';
+  import { createSheet, type SheetOptions } from '@lzth/zupf';
 
   interface Props {
     id: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { parsePattern } from 'zupf';
+  import { parsePattern } from '@lzth/zupf';
   import { useGestures } from './gestures.svelte';
   import HoldBar from './HoldBar.svelte';
 

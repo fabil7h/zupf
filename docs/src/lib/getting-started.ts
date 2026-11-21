@@ -9,8 +9,8 @@ export const html = `<button id="open">Open Drawer</button>
   <button data-zupf-close>Close</button>
 </div>`;
 
-export const js = `import { createSheet } from 'zupf';
-import 'zupf/style.css';
+export const js = `import { createSheet } from '@lzth/zupf';
+import '@lzth/zupf/style.css';
 
 const sheet = createSheet({
   content: '#sheet',
@@ -32,8 +32,8 @@ export const css = `:root {
 [data-zupf-content][data-dragging] { }
 [data-zupf-content][data-direction='left'] { }`;
 
-export const more = `import { createPullToRefresh, createGestures } from 'zupf';
-import 'zupf/pull-to-refresh.css'; // optional defaults
+export const more = `import { createPullToRefresh, createGestures } from '@lzth/zupf';
+import '@lzth/zupf/pull-to-refresh.css'; // optional defaults
 
 createPullToRefresh({
   content: '#list',
@@ -50,7 +50,7 @@ createGestures({
 
 export const preact = `import { createPortal } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
-import { createSheet } from 'zupf';
+import { createSheet } from '@lzth/zupf';
 
 export function Drawer({ trigger, children }) {
   const content = useRef(null);
@@ -79,7 +79,7 @@ export function Drawer({ trigger, children }) {
 
 export const react = `import { useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { createSheet } from 'zupf';
+import { createSheet } from '@lzth/zupf';
 
 export function Drawer({ trigger, children }) {
   const content = useRef(null);
@@ -108,7 +108,7 @@ export function Drawer({ trigger, children }) {
 
 export const vue = `<script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { createSheet } from 'zupf';
+import { createSheet } from '@lzth/zupf';
 
 const content = ref();
 const overlay = ref();
@@ -129,7 +129,7 @@ onBeforeUnmount(() => sheet.destroy());
 </template>`;
 
 export const svelte = `<script>
-  import { createSheet } from 'zupf';
+  import { createSheet } from '@lzth/zupf';
 
   let { trigger, children } = $props();
   let content, overlay;

@@ -10,7 +10,7 @@
   useGestures(() => pad, { gestures: { tap: fire, 'double-tap': fire, 'triple-tap': fire, 'long-press': fire } });
 
   const code = {
-    js: `import { createGestures } from 'zupf';
+    js: `import { createGestures } from '@lzth/zupf';
 
 createGestures({
   target: '#pad',

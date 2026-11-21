@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import { createGestures, type GestureEvent, type Gestures, type GesturesOptions, type GesturesState } from 'zupf';
+import { createGestures, type GestureEvent, type Gestures, type GesturesOptions, type GesturesState } from '@lzth/zupf';
 
 /**
  * Creates the instance on mount and destroys it on teardown. Options are applied once; demos recreate the

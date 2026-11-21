@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GestureEvent } from 'zupf';
+  import type { GestureEvent } from '@lzth/zupf';
   import { useGestures } from './gestures.svelte';
   import {
     HOLD_SWIPE_DISTANCE,

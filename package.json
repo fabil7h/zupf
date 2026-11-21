@@ -1,5 +1,5 @@
 {
-  "name": "zupf",
+  "name": "@lzth/zupf",
   "version": "0.1.0",
   "description": "Native-feeling drawer / bottom sheet, pull-to-refresh and gestures for any framework.",
   "keywords": [
@@ -94,5 +94,8 @@
       "name": "node",
       "version": ">=22.23.4"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

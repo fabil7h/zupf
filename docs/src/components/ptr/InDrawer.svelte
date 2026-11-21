@@ -11,9 +11,9 @@
   const pull = usePullToRefresh(() => list, { ...barOptions, onRefresh: content.load });
 
   const code = {
-    js: `import { createSheet, createPullToRefresh } from 'zupf';
-import 'zupf/style.css';
-import 'zupf/pull-to-refresh.css';
+    js: `import { createSheet, createPullToRefresh } from '@lzth/zupf';
+import '@lzth/zupf/style.css';
+import '@lzth/zupf/pull-to-refresh.css';
 
 createSheet({ content: '#sheet', overlay: '#overlay', trigger: '#open' });
 const ptr = createPullToRefresh({

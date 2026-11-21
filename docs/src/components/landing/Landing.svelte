@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createPullToRefresh, type PullStatus, type PullToRefresh } from 'zupf';
+  import { createPullToRefresh, type PullStatus, type PullToRefresh } from '@lzth/zupf';
   import { href } from '../../lib/nav';
   import Drawer from '../Drawer.svelte';
   import ThemeToggle from '../ThemeToggle.svelte';

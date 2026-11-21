@@ -1,7 +1,7 @@
 <script lang="ts">
   // Mobile navigation: a left-side zupf, opened from the header's menu button.
   import type { Snippet } from 'svelte';
-  import type { Sheet } from 'zupf';
+  import type { Sheet } from '@lzth/zupf';
   import Drawer from './Drawer.svelte';
   import Icon from './Icon.svelte';
 

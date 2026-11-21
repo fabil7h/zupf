@@ -10,7 +10,7 @@ Native-feeling bottom sheets, pull-to-refresh and gestures for the web. Any fram
 - **Easy to theme**: zero-specificity `:where()` default CSS and CSS variables.
 
 ```js
-import { createSheet, createPullToRefresh, createGestures } from 'zupf';
+import { createSheet, createPullToRefresh, createGestures } from '@lzth/zupf';
 
 createSheet({ content: '#sheet', trigger: '#open', snapPoints: [0.5, 1] });
 createPullToRefresh({ content: '#feed', onRefresh: () => loadNewPosts() });
@@ -20,12 +20,12 @@ createGestures({ target: '#photo', gestures: { 'double-tap': () => like() } });
 ## Install
 
 ```sh
-npm i zupf
+npm i @lzth/zupf
 ```
 
 ```js
-import { createSheet } from 'zupf';
-import 'zupf/style.css'; // optional defaults
+import { createSheet } from '@lzth/zupf';
+import '@lzth/zupf/style.css'; // optional defaults
 ```
 
 ## Drawer
@@ -162,8 +162,8 @@ Your own selectors override the defaults no matter how specific they are. You ca
 ```
 
 ```js
-import { createPullToRefresh } from 'zupf';
-import 'zupf/pull-to-refresh.css'; // optional defaults
+import { createPullToRefresh } from '@lzth/zupf';
+import '@lzth/zupf/pull-to-refresh.css'; // optional defaults
 
 const ptr = createPullToRefresh({
   content: '#list',
@@ -186,7 +186,7 @@ Styling hooks: `data-state` on content and indicator, `data-settling` (`refreshe
 Taps, long presses, swipes and any sequence of them on one element.
 
 ```js
-import { createGestures } from 'zupf';
+import { createGestures } from '@lzth/zupf';
 
 const gestures = createGestures({
   target: '#photo',

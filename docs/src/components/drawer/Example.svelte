@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Sheet, SheetState } from 'zupf';
+  import type { Sheet, SheetState } from '@lzth/zupf';
   import { exampleCode } from '../../lib/codegen';
   import { inlineCode } from '../../lib/text';
   import { examplePages, type Example } from '../../lib/examples';

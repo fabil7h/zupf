@@ -11,7 +11,7 @@
   let variant = $state(0);
   const { pattern, hint } = $derived(variants[variant]);
   const code = variants.map((v) => ({
-    js: `import { createGestures } from 'zupf';
+    js: `import { createGestures } from '@lzth/zupf';
 
 createGestures({
   target: '#pad',

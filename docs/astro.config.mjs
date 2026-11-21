@@ -17,7 +17,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     // Demos import the library from source, like a user would import the package.
-    resolve: { alias: { zupf: `${lib}/index.ts` } },
+    resolve: { alias: { '@lzth/zupf': `${lib}/index.ts` } },
     // Serve the docs and the library source; nothing else from the repo.
     server: { fs: { allow: ['.', lib] } },
   },
