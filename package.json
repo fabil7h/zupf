@@ -1,19 +1,45 @@
 {
   "name": "zupf",
   "version": "0.1.0",
-  "private": true,
-  "description": "Native-feeling drawer / bottom sheet, pull-to-refresh and gestures for any framework. Drawer based on vaul.",
+  "description": "Native-feeling drawer / bottom sheet, pull-to-refresh and gestures for any framework.",
   "keywords": [
+    "angular",
+    "astro",
     "bottom-sheet",
     "dialog",
+    "double-tap",
     "drawer",
     "framework-agnostic",
     "gestures",
+    "ios",
+    "lit",
+    "long-press",
+    "mobile",
+    "modal",
+    "preact",
     "pull-to-refresh",
+    "qwik",
+    "react",
     "sheet",
-    "vanilla"
+    "snap-points",
+    "solid",
+    "solidjs",
+    "svelte",
+    "swipe",
+    "touch",
+    "typescript",
+    "vanilla",
+    "vaul",
+    "vue",
+    "web-components"
   ],
+  "bugs": "https://github.com/fabil7h/zupf/issues",
   "license": "MIT",
+  "author": "fabil7h",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabil7h/zupf.git"
+  },
   "workspaces": [
     "docs"
   ],
