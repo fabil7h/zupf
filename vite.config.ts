@@ -53,8 +53,9 @@ export default defineConfig({
 
   // Oxlint
   lint: {
-    ignorePatterns: ['dist/**', 'docs-dist/**'],
-    plugins: ['typescript', 'unicorn', 'oxc', 'import', 'promise', 'react'],
+    // The docs' <script> blocks are linted too; their templates are checked by `astro check` in docs/.
+    ignorePatterns: ['dist/**', 'docs/dist/**', 'docs/.astro/**', 'docs/node_modules/**'],
+    plugins: ['typescript', 'unicorn', 'oxc', 'import', 'promise'],
     categories: { correctness: 'error', suspicious: 'warn', perf: 'warn' },
     options: { typeAware: true, typeCheck: true },
     rules: {
@@ -65,10 +66,6 @@ export default defineConfig({
       'no-script-url': 'error',
       'no-proto': 'error',
       'no-caller': 'error',
-      'react/no-danger': 'error',
-      'react/jsx-no-script-url': 'error',
-      'react/jsx-no-target-blank': 'error',
-      'react/iframe-missing-sandbox': 'error',
       'unicorn/no-document-cookie': 'error',
       'typescript/no-floating-promises': 'error',
       'typescript/no-misused-promises': 'error',
@@ -87,38 +84,14 @@ export default defineConfig({
       'typescript/switch-exhaustiveness-check': 'warn',
       'import/no-cycle': 'error',
 
-      // Docs use Preact's automatic JSX runtime and `class`, not React.
-      'react/react-in-jsx-scope': 'off',
-      'react/no-unknown-property': 'off',
-      // Mount-once effects are common in docs; intentional ones carry an inline disable with a reason.
-      'react-hooks/exhaustive-deps': 'warn',
-      // React Compiler rules: Preact has no compiler, and mutating `useRef` values is the intended use.
-      'react/immutability': 'off',
-      // Preact accepts string `style`.
-      'react/style-prop-object': 'off',
-      // Rendered lists are static (split strings, fixed bars/steps): index keys are stable.
-      'react/no-array-index-key': 'off',
-      // `.then` callbacks here only run side effects (setState); a return value adds nothing.
-      'promise/always-return': 'off',
-
       // DOM code narrows event targets and query results constantly; guards are used where it matters.
       'typescript/no-unsafe-type-assertion': 'off',
       // Side-effect imports: stylesheets and type augmentation.
       'import/no-unassigned-import': ['warn', { allow: ['**/*.css', 'vite-plus/test/browser'] }],
+      // `.then` callbacks in the docs only run side effects (state updates); a return value adds nothing.
+      'promise/always-return': 'off',
     },
     overrides: [
-      {
-        // Reviewed HTML sinks: all render authored, static content (or escaped via docs/highlight.ts).
-        // Any new `dangerouslySetInnerHTML` outside this list fails the build.
-        files: [
-          'docs/app.tsx',
-          'docs/pages/Drawer.tsx',
-          'docs/components/Icon.tsx',
-          'docs/components/CodeBlock.tsx',
-          'docs/components/Example.tsx',
-        ],
-        rules: { 'react/no-danger': 'off' },
-      },
       {
         // `describe` blocks are long by nature.
         files: ['test/**'],
@@ -129,18 +102,20 @@ export default defineConfig({
         files: ['**/*.d.ts', 'vite.config.ts'],
         rules: { 'max-params': 'off' },
       },
-      {
-        // Build script: console output is the point.
-        files: ['docs/prerender.mjs'],
-        rules: { 'no-console': 'off' },
-      },
     ],
   },
 
   // Oxfmt
   fmt: {
     // Tailwind arbitrary values rely on whitespace remaining encoded with underscores.
-    ignorePatterns: ['dist/**', 'docs-dist/**', 'docs/docs.css', 'package-lock.json'],
+    ignorePatterns: [
+      'dist/**',
+      'docs/dist/**',
+      'docs/.astro/**',
+      'docs/node_modules/**',
+      'docs/src/styles/docs.css',
+      '**/package-lock.json',
+    ],
     singleQuote: true,
     printWidth: 120,
     sortPackageJson: true,

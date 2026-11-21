@@ -1,0 +1,8 @@
+---
+// Text with `backticks` turned into <code>, for prose taken from strings.
+import { inlineCode } from '../lib/text';
+
+const { text } = Astro.props as { text: string };
+---
+
+<p set:html={inlineCode(text)} />

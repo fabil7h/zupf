@@ -1,0 +1,79 @@
+---
+import Prose from '../components/Prose.astro';
+import Table from '../components/Table.astro';
+import CustomFlow from '../components/gestures/CustomFlow.svelte';
+import InAList from '../components/gestures/InAList.svelte';
+import Swipes from '../components/gestures/Swipes.svelte';
+import Taps from '../components/gestures/Taps.svelte';
+import DocsLayout from '../layouts/DocsLayout.astro';
+---
+
+<DocsLayout slug="gestures">
+  <p class="text-base text-muted">
+    Describe a gesture as a string, like <code>'double-tap'</code> or <code>'tap tap hold+swipe-left'</code>, and get a
+    callback. Touch, pen and mouse. Scrolling stays native wherever it can.
+  </p>
+  <Taps client:visible={{ rootMargin: '300px' }} />
+  <InAList client:visible={{ rootMargin: '300px' }} />
+  <CustomFlow client:visible={{ rootMargin: '300px' }} />
+  <Swipes client:visible={{ rootMargin: '300px' }} />
+  <section id="patterns">
+    <h2>Patterns</h2>
+    <Prose
+      text="A pattern is a list of presses separated by spaces (or an array). Each press is a combination of tokens joined with `+`, in the order they happen while the finger is down."
+    />
+    <Table
+      head={['Token', 'Alias', 'Description']}
+      rows={[
+        ['tap', '', 'Pressed and released without holding or moving more than `slop`.'],
+        ['hold', 'long-press', 'Held still for `holdTime`.'],
+        ['swipe-up', '', 'Moved `swipeDistance` up. Also `swipe-down`, `swipe-left`, `swipe-right`.'],
+        ['swipe', '', 'Any swipe direction.'],
+        ['tap tap', 'double-tap', 'Two presses within `interval`.'],
+        ['tap tap tap', 'triple-tap', ''],
+      ]}
+    />
+    <Prose
+      text="A gesture fires as soon as no other bound pattern can still extend it: right away, or once the next press goes elsewhere, or after `interval`. A press that doesn't fit restarts the sequence from that press, and `hold` only counts when a bound pattern uses it. Handlers get `{ gesture, steps, direction, target, event }`."
+    />
+  </section>
+  <section id="options">
+    <h2>Options</h2>
+    <Table
+      head={['Option', 'Default', 'Description']}
+      rows={[
+        ['target', '', 'Element that receives the presses. Element or selector.'],
+        ['gestures', '', "Initial bindings, keyed by pattern: `{ 'double-tap': fn }`."],
+        [
+          'holdTime',
+          '500',
+          'ms a press must be held still to count as `hold`. Only recognized when a pattern uses `hold`.',
+        ],
+        ['interval', '300', 'Max ms between releasing and pressing again within a sequence.'],
+        ['swipeDistance', '50', 'px a press must move in one direction to count as a swipe.'],
+        ['slop', '10', 'px a press may move and still be a `tap` or `hold`.'],
+        ['mouse', 'true', 'Recognize mouse presses (primary button). Touch and pen always work.'],
+        ['disabled', 'false', 'Ignore input.'],
+      ]}
+    />
+    <h3>Instance</h3>
+    <p>
+      <code>on(pattern, handler)</code> (returns <code>off</code>), <code>reset()</code>,
+      <code>setOptions(partial)</code>, <code>getState()</code> → <code>{'{ pressed, steps }'}</code>,
+      <code>subscribe(fn)</code>, <code>destroy()</code>.
+    </p>
+    <h3>Browser defaults</h3>
+    <Prose
+      text="Derived from the bindings and restored on `destroy()`: `touch-action` blocks scrolling only on the axes that swipe from the start of a press, and is `manipulation` (no double-tap zoom) for multi-press patterns. With `hold` bound, the iOS callout, text selection and Android's context menu are off. A mouse hold or swipe that fires doesn't also click. A mouse swipe can still select text unless `hold` is bound (or you set `user-select: none`). Patterns that can never match throw when bound: `hold` must be first in a press and only once, and the same direction twice in a row is one swipe. An exception in a handler or subscriber is reported with `reportError` and doesn't affect the others."
+    />
+    <h3>Styling hooks</h3>
+    <Table
+      head={['Hook', 'On', 'Description']}
+      rows={[
+        ['data-zupf-gestures', 'target', 'Set while attached.'],
+        ['data-pressed', 'target', 'A press is in progress.'],
+        ['data-holding', 'target', 'The press became a `hold`.'],
+      ]}
+    />
+  </section>
+</DocsLayout>

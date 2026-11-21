@@ -11,9 +11,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
     "types": ["vite-plus/client"]
   },
-  "include": ["src", "test", "docs", "*.config.ts"]
+  "include": ["src", "test", "*.config.ts"]
 }

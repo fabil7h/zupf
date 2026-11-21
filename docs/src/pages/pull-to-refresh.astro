@@ -1,0 +1,73 @@
+---
+import Table from '../components/Table.astro';
+import Api from '../components/ptr/Api.svelte';
+import Basic from '../components/ptr/Basic.svelte';
+import InDrawer from '../components/ptr/InDrawer.svelte';
+import IndicatorStyles from '../components/ptr/IndicatorStyles.svelte';
+import Nested from '../components/ptr/Nested.svelte';
+import TuningSection from '../components/ptr/TuningSection.svelte';
+import DocsLayout from '../layouts/DocsLayout.astro';
+---
+
+<DocsLayout slug="pull-to-refresh">
+  <p class="text-base text-muted">
+    Pull down at the top of any scroller to refresh. It follows the finger, ignores sideways swipes and leaves native
+    scrolling alone. Demos here enable mouse pulls so you can try them on desktop.
+  </p>
+  <Basic client:visible={{ rootMargin: '300px' }} />
+  <IndicatorStyles client:visible={{ rootMargin: '300px' }} />
+  <InDrawer client:visible={{ rootMargin: '300px' }} />
+  <Nested client:visible={{ rootMargin: '300px' }} />
+  <TuningSection client:visible={{ rootMargin: '300px' }} />
+  <Api client:visible={{ rootMargin: '300px' }} />
+  <section id="options">
+    <h2>Options</h2>
+    <Table
+      head={['Option', 'Default', 'Description']}
+      rows={[
+        ['content', '', 'The element that is pulled down. Element or selector.'],
+        [
+          'indicator',
+          '[data-zupf-ptr-indicator]',
+          'Revealed above the content, found next to it by default. `null` for none.',
+        ],
+        [
+          'scroller',
+          'auto',
+          'Element or selector that must be scrolled to the top. Defaults to `content` if it scrolls, else its nearest scrollable ancestor or the page.',
+        ],
+        [
+          'onRefresh',
+          '',
+          'Called on release past the threshold. Return a promise to keep the refreshing state until it settles.',
+        ],
+        ['threshold', '64', 'Visible offset in px needed to refresh.'],
+        ['max', '150', 'Offset the pull approaches, with growing resistance.'],
+        ['refreshingOffset', 'threshold', 'Where the content rests while refreshing.'],
+        ['mouse', 'false', 'Also allow pulling with a mouse. Touch and pen always work.'],
+        ['disabled', 'false', 'Ignore pulls.'],
+        ['duration', '300', 'Settle transition in ms.'],
+        ['easing', 'cubic-bezier(0.32, 0.72, 0, 1)', 'Settle transition timing function.'],
+        ['onPull', '', '`(offset, progress)` on every pull frame.'],
+        ['onStatusChange', '', '`idle`, `pulling`, `ready` or `refreshing`.'],
+      ]}
+    />
+    <h3>Instance</h3>
+    <p>
+      <code>refresh()</code>, <code>setOptions(partial)</code>, <code>getState()</code>, <code>subscribe(fn)</code>,
+      <code>destroy()</code>, <code>status</code>.
+    </p>
+    <h3>Styling hooks</h3>
+    <Table
+      head={['Hook', 'On', 'Description']}
+      rows={[
+        ['data-state', 'content, indicator', '`idle`, `pulling`, `ready` or `refreshing`.'],
+        ['data-settling', 'indicator', '`refreshed` or `cancelled` while sliding back to rest.'],
+        ['data-pulling', 'content', 'Set while a finger is pulling.'],
+        ['--zupf-ptr-indicator-size', 'theme', 'Indicator height. Default `64px`.'],
+        ['--zupf-ptr-spinner-color', 'theme', 'Spinner color. Default `currentColor`.'],
+        ['--zupf-ptr-spinner-track', 'theme', 'Spinner track color.'],
+      ]}
+    />
+  </section>
+</DocsLayout>

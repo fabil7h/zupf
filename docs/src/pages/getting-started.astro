@@ -1,0 +1,95 @@
+---
+import CodeBlock from '../components/CodeBlock.svelte';
+import FirstDrawer from '../components/FirstDrawer.svelte';
+import DocsLayout from '../layouts/DocsLayout.astro';
+import { css, html, js, more, preact, react, svelte, vue } from '../lib/getting-started';
+import { href } from '../lib/nav';
+---
+
+<DocsLayout slug="getting-started">
+  <p class="text-base text-muted">
+    Three touch interactions that feel native, for any framework. You write the markup, zupf adds the gestures, physics
+    and accessibility. Zero dependencies, about 13 KB gzipped.
+  </p>
+
+  <h2 id="overview">What you can build</h2>
+  <ul class="my-[1em] list-disc pl-10">
+    <li>
+      <a href={href('drawer')}><strong>Drawer</strong></a>: bottom sheets with <a href={href('drawer', 'snap')}
+        >snap points</a
+      >, a <a href={href('drawer', 'scaled')}>scaled background</a> like iOS, <a href={href('drawer', 'nested')}
+        >nested sheets</a
+      >, side panels and maps-style <a href={href('drawer', 'snap-nonmodal')}>non-modal sheets</a>. Based on <a
+        href="https://github.com/emilkowalski/vaul">vaul</a
+      >, rewritten without React or Radix.
+    </li>
+    <li>
+      <a href={href('pull-to-refresh')}><strong>Pull to refresh</strong></a>: on any scroller, even <a
+        href={href('pull-to-refresh', 'drawer')}>inside a drawer</a
+      >, with an <a href={href('pull-to-refresh', 'blog')}>indicator you style in CSS</a>.
+    </li>
+    <li>
+      <a href={href('gestures')}><strong>Gestures</strong></a>: <a href={href('gestures', 'list')}>swipe actions</a> in
+      lists, double taps, long presses and <a href={href('gestures', 'custom')}>custom sequences</a> like <code
+        >tap tap hold+swipe-up</code
+      >.
+    </li>
+  </ul>
+
+  <h2 id="installation">Installation</h2>
+  <CodeBlock
+    client:visible={{ rootMargin: '300px' }}
+    tabs={[
+      { label: 'npm', lang: 'sh', code: 'npm install zupf' },
+      { label: 'pnpm', lang: 'sh', code: 'pnpm add zupf' },
+      { label: 'yarn', lang: 'sh', code: 'yarn add zupf' },
+      { label: 'bun', lang: 'sh', code: 'bun add zupf' },
+    ]}
+  />
+
+  <h2 id="usage">Your first drawer</h2>
+  <p>Plain HTML plus one call. zupf wires up dragging, animation, focus trap, Esc and the ARIA attributes.</p>
+  <CodeBlock
+    client:visible={{ rootMargin: '300px' }}
+    tabs={[
+      { label: 'HTML', lang: 'html', code: html },
+      { label: 'JavaScript', lang: 'js', code: js },
+    ]}
+  />
+  <FirstDrawer client:visible={{ rootMargin: '300px' }} />
+
+  <h2 id="styling">Styling</h2>
+  <p>
+    The default stylesheet is optional and uses zero-specificity <code>:where()</code>, so your CSS always wins. Theme
+    it with variables:
+  </p>
+  <CodeBlock client:visible={{ rootMargin: '300px' }} tabs={[{ lang: 'css', code: css }]} />
+
+  <h2 id="more">Pull to refresh and gestures</h2>
+  <p>
+    Same package, same pattern: pass elements, get an instance with <code>setOptions</code>, <code>getState</code>,
+    <code>subscribe</code> and <code>destroy</code>.
+  </p>
+  <CodeBlock client:visible={{ rootMargin: '300px' }} tabs={[{ lang: 'js', code: more }]} />
+  <p>
+    Live demos and options: <a href={href('pull-to-refresh')}>Pull to Refresh</a>, <a href={href('gestures')}
+      >Gestures</a
+    >.
+  </p>
+
+  <h2 id="frameworks">Frameworks</h2>
+  <p>
+    Always render the elements (zupf toggles <code>hidden</code> itself), create the instance on mount and destroy it on
+    unmount. These docs use the Svelte version.
+  </p>
+  <CodeBlock
+    client:visible={{ rootMargin: '300px' }}
+    tabs={[
+      { label: 'Svelte', lang: 'html', code: svelte },
+      { label: 'React', lang: 'js', code: react },
+      { label: 'Preact', lang: 'js', code: preact },
+      { label: 'Vue', lang: 'html', code: vue },
+    ]}
+  />
+  <p>A sheet is a valid Svelte store and plugs straight into React's <code>useSyncExternalStore</code>.</p>
+</DocsLayout>

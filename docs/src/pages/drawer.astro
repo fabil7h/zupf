@@ -1,0 +1,23 @@
+---
+import Example from '../components/drawer/Example.svelte';
+import DocsLayout from '../layouts/DocsLayout.astro';
+import { examplePages } from '../lib/examples';
+import { inlineCode } from '../lib/text';
+---
+
+<DocsLayout slug="drawer">
+  <p class="text-base text-muted">
+    Every demo is live: open it, play with it, copy the code. Start with snap points and the scaled background.
+  </p>
+  {
+    examplePages.map((section) => (
+      <section>
+        <h2 id={section.slug}>{section.title}</h2>
+        {section.intro && <p class="text-base text-muted" set:html={inlineCode(section.intro)} />}
+        {(section.examples ?? []).map((example) => (
+          <Example client:visible={{ rootMargin: '300px' }} id={example.id} />
+        ))}
+      </section>
+    ))
+  }
+</DocsLayout>

@@ -1,0 +1,520 @@
+@import 'tailwindcss' source('..');
+/* Library defaults below utilities, like a user's own stylesheet would see them. */
+@import '../../../src/drawer/style.css' layer(components);
+@import '../../../src/pull-to-refresh/style.css' layer(components);
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Geist Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/* ── tokens ─────────────────────────────────────────────── */
+
+/* Semantic colors use light-dark(): they follow color-scheme (system, or the theme toggle). */
+@theme {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:
+    'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-system-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Sizes only: line-height is inherited (1.65 from body) unless a leading-* utility sets it. */
+  --text-*: initial;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+
+  --color-canvas: light-dark(#fff, var(--color-zinc-950));
+  --color-surface: light-dark(var(--color-zinc-100), var(--color-zinc-900));
+  --color-fg: light-dark(var(--color-zinc-950), var(--color-zinc-50));
+  --color-body: light-dark(var(--color-zinc-700), var(--color-zinc-300));
+  --color-muted: light-dark(var(--color-zinc-600), var(--color-zinc-400));
+  --color-subtle: var(--color-zinc-500);
+  --color-line: light-dark(var(--color-zinc-200), var(--color-zinc-800));
+  --color-line-strong: light-dark(var(--color-zinc-300), var(--color-zinc-700));
+  --color-accent: light-dark(var(--color-zinc-900), var(--color-zinc-50));
+  --color-accent-fg: light-dark(#fff, var(--color-zinc-950));
+  --color-code: light-dark(var(--color-zinc-50), var(--color-zinc-900));
+
+  /* Status colors for the demos. */
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+  --color-warning: #d97706;
+
+  --color-syntax-keyword: light-dark(#a626a4, #c678dd);
+  --color-syntax-string: light-dark(#50a14f, #98c379);
+  --color-syntax-number: light-dark(#c18401, #d19a66);
+  --color-syntax-function: light-dark(#4078f2, #61afef);
+  --color-syntax-property: light-dark(#e45649, #e06c75);
+
+  /* Squircles look less round at the same radius, hence --radius-scale (see base). */
+  --radius-xs: calc(5px * var(--radius-scale));
+  --radius-sm: calc(6px * var(--radius-scale));
+  --radius-md: calc(7px * var(--radius-scale));
+  --radius-lg: calc(8px * var(--radius-scale));
+  --radius-xl: calc(10px * var(--radius-scale));
+  --radius-2xl: calc(12px * var(--radius-scale));
+  --radius-3xl: calc(14px * var(--radius-scale));
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-pop: pop 500ms var(--ease-overshoot);
+  --animate-gesture-pop: gesture-pop 300ms var(--ease-ios);
+  --animate-shake: shake 300ms;
+  --animate-wave: wave 500ms var(--ease-ios);
+
+  @keyframes pop {
+    from {
+      scale: 0.94;
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes gesture-pop {
+    from {
+      scale: 0.8;
+      opacity: 0;
+    }
+  }
+
+  @keyframes shake {
+    25% {
+      translate: -6px;
+    }
+
+    75% {
+      translate: 6px;
+    }
+  }
+
+  @keyframes wave {
+    30% {
+      rotate: -12deg;
+    }
+
+    60% {
+      rotate: 8deg;
+    }
+  }
+}
+
+/* Hover-capable mouse/trackpad, and touch screens. */
+@custom-variant fine-pointer (@media (hover: hover) and (pointer: fine));
+@custom-variant touch (@media (hover: none));
+/* Nav and TOC links: aria-current="page" / "location". */
+@custom-variant current (&[aria-current]:not([aria-current='false']));
+/* Resolved theme (explicit choice or system), set on <html> before first paint by the theme script. */
+@custom-variant theme-dark (&:where([data-dark] *));
+/* Gesture list demo: a row being dragged after a hold (data-peek) or on its way out (data-removed). */
+@custom-variant swiped (&:is([data-peek], [data-removed]));
+@custom-variant swiped-delete (&:is([data-peek='delete'], [data-removed='delete']));
+@custom-variant swiped-archive (&:is([data-peek='archive'], [data-removed='archive']));
+
+/* ── utilities ──────────────────────────────────────────── */
+
+/* Colors fade; scale and translate move with the sheet's easing. Reduced motion keeps only the fades. */
+@utility transition-ui {
+  transition: background-color 150ms ease,
+  border-color 150ms ease,
+  color 150ms ease,
+  opacity 150ms ease,
+  box-shadow 150ms ease,
+  scale 200ms var(--ease-ios),
+  translate 200ms var(--ease-ios);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-property: background-color,
+    border-color,
+    color,
+    opacity,
+    box-shadow;
+    scale: none !important;
+    translate: none !important;
+  }
+}
+
+/* Opts out of the global squircle (see base): pills, circles, and frames whose content moves while clipped
+   (a squircle clip needs a mask layer, a round one doesn't). */
+@utility corner-round {
+  corner-shape: round;
+}
+
+@utility bg-dots {
+  background:
+    radial-gradient(circle, var(--color-line) 1px, transparent 1px) 0 0 / 16px 16px,
+    var(--color-canvas);
+}
+
+@utility bg-dots-hero {
+  background:
+    radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--color-surface) 55%, transparent), transparent 34%),
+    radial-gradient(circle, var(--color-line-strong) 1.25px, transparent 1.5px) center / 20px 20px;
+  mask-image: radial-gradient(ellipse at center, #000 0%, transparent 65%);
+}
+
+/* ── base ───────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --radius-scale: 1;
+    --zupf-bg: light-dark(#fff, var(--color-zinc-900));
+    --zupf-color: var(--color-fg);
+    --zupf-handle-color: light-dark(var(--color-zinc-300), var(--color-zinc-700));
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /* Squircle corners (Chromium 139+). Other browsers keep regular rounded corners at their original size. */
+  @supports (corner-shape: squircle) {
+    :root {
+      --radius-scale: 1.6;
+    }
+
+    *,
+    ::before,
+    ::after {
+      corner-shape: squircle;
+    }
+
+    /* The handle stays a pill; spinners and demo indicators stay circles. */
+    [data-zupf-handle],
+    [data-zupf-ptr-spinner],
+    .ring {
+      corner-shape: round;
+    }
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-line);
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-fg);
+    font-size: 15px;
+    line-height: 1.65;
+    touch-action: manipulation;
+  }
+
+  :where(a, button):focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  code {
+    font-size: 0.85em;
+    padding: 0.1em 0.35em;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface);
+  }
+
+  small {
+    font-size: smaller;
+  }
+
+  /* The browser's monospace, as before Tailwind's preflight (logs; code blocks use Geist Mono via <code>). */
+  pre {
+    font-family: monospace;
+  }
+
+  pre code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 13px;
+  }
+
+  /* Page content. */
+  article h1 {
+    margin-bottom: 8px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  article h2 {
+    margin: 48px 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 80px;
+  }
+
+  article h3 {
+    margin: 1em 0;
+    font-size: 1.17em;
+    font-weight: 700;
+  }
+
+  article p {
+    margin-bottom: 16px;
+    color: var(--color-body);
+  }
+
+  article :where(p, li) a {
+    text-decoration-line: underline;
+  }
+
+  article section {
+    scroll-margin-top: 80px;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 640px;
+  }
+}
+
+/* ── components ─────────────────────────────────────────── */
+/* Classes that appear in the examples' HTML tabs, so the shown code stays readable. */
+
+@layer components {
+  .btn {
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-canvas);
+    color: var(--color-fg);
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    cursor: pointer;
+    @apply transition-ui;
+
+    &:hover {
+      background: var(--color-surface);
+    }
+
+    &:active:not(:disabled) {
+      scale: 0.97;
+      transition-duration: 80ms;
+    }
+  }
+
+  .btn-primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+
+    &:hover {
+      background: var(--color-accent);
+      opacity: 0.9;
+    }
+  }
+
+  .sheet-body {
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+    padding: 28px 20px;
+
+    &> :first-child {
+      margin-top: 0;
+    }
+
+    &> :last-child {
+      margin-bottom: 0;
+    }
+
+    & h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    & p {
+      margin: 0 0 16px;
+      color: var(--color-muted);
+    }
+  }
+
+  /* A visible handle (12px margin + 5px bar + 12px margin) already spaces the edge it sits on. */
+  [data-zupf-content][data-direction='bottom']:not([data-draggable='false']):has(> [data-zupf-handle]) .sheet-body {
+    padding-top: 0;
+  }
+
+  [data-zupf-content][data-direction='top']:not([data-draggable='false']):has(> [data-zupf-handle]) .sheet-body {
+    padding-bottom: 0;
+  }
+
+  .tall {
+    display: grid;
+    place-items: center;
+    height: 500px;
+    border: 1px dashed var(--color-line);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    color: var(--color-muted);
+  }
+
+  .form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .form :is(input, select, textarea),
+  .input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-canvas);
+    color: var(--color-fg);
+  }
+
+  .no-drag {
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, #f59e0b 15%, transparent);
+    font-size: 14px;
+  }
+
+  .list {
+    margin: 1em 0;
+    padding-left: 20px;
+    list-style: decimal;
+
+    & li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-line);
+    }
+  }
+}
+
+/* ── docs chrome ────────────────────────────────────────── */
+/* Class lists reused across the docs' own components. Utilities in markup still override these. */
+
+@layer components {
+
+  /* Sized by `--icon-size`. */
+  .icon {
+    @apply inline-flex size-(--icon-size) shrink-0 [&_svg]:size-full;
+  }
+
+  .icon-button {
+    @apply grid size-8.5 cursor-pointer place-items-center rounded-lg border border-transparent text-base text-muted transition-ui hover:border-line hover:bg-surface hover:text-fg active:scale-90 active:duration-80;
+  }
+
+  /* Both theme icons share one grid cell. Transitions only after a click (data-animate), so page loads never spin them. */
+  .theme-icon {
+    @apply [grid-area:1/1] group-data-animate:[transition:opacity_200ms_ease,rotate_500ms_var(--ease-ios),scale_500ms_var(--ease-ios)] motion-reduce:scale-none! motion-reduce:rotate-none! motion-reduce:group-data-animate:transition-opacity;
+  }
+
+  /* Copy and check icons swap with a slight overshoot. */
+  .copy-icon-layer {
+    @apply size-full [grid-area:1/1] [transition:opacity_150ms_ease,scale_300ms_var(--ease-overshoot)] motion-reduce:scale-none! motion-reduce:transition-opacity;
+  }
+
+  .demo-preview {
+    @apply mt-5 mb-3 grid min-h-55 grid-cols-[minmax(0,1fr)] place-items-center gap-3 rounded-2xl border border-line-strong bg-dots p-6 max-sm:px-3 max-sm:py-4;
+  }
+
+  .demo-log {
+    @apply m-0 max-h-30 w-full overflow-auto text-[11px] whitespace-pre-wrap text-muted;
+  }
+
+  .pager-link {
+    @apply flex min-w-45 flex-col rounded-xl border border-line-strong px-4 py-3 font-medium transition-ui hover:bg-surface max-md:min-w-0 max-md:flex-1;
+  }
+
+  .secondary-link {
+    @apply text-[13px] font-medium text-muted transition-colors duration-160 hover:text-fg;
+  }
+
+  /* Below 640px rows become stacked cards: name on top, labelled values below. */
+  .api-cell {
+    @apply border-b border-line px-3.5 py-2.5 text-left align-top group-last:border-b-0 max-sm:block max-sm:border-0 max-sm:p-0 max-sm:not-first:mt-1.5 max-sm:empty:hidden;
+  }
+
+  /* Phone-sized frame around a pull-to-refresh demo; its content (the list) is pulled and clipped. Height set per demo. */
+  .phone-frame {
+    @apply relative w-[min(100%,340px)] overflow-hidden rounded-[16px] border border-line-strong bg-surface text-muted corner-round [--list-bg:var(--color-canvas)];
+  }
+
+  /* Touch area for the gesture demos. Pair with `group` for the hold bar (reacts to data-pressed / data-holding). */
+  .gesture-pad {
+    @apply relative grid min-h-55 w-[min(100%,380px)] cursor-pointer place-items-center content-center gap-3.5 overflow-hidden rounded-3xl border border-dashed border-line-strong bg-surface p-5 text-center text-fg transition-[background] duration-150 data-pressed:bg-[color-mix(in_srgb,var(--color-fg)_7%,var(--color-surface))] data-unlocked:border-solid data-unlocked:border-accent motion-reduce:transition-none;
+  }
+
+  .swipe-action {
+    @apply w-16 cursor-pointer text-xs font-semibold text-white;
+  }
+
+  /* Nav and TOC links hang off a continuous guide line; the current one grows a bar on top of it. The line is
+     inset at the ends of each group so it starts and ends level with the labels (and the bar). */
+  .guide-link {
+    @apply relative block py-1.75 pl-3.75 text-sm leading-4.5 text-muted transition-ui hover:text-fg current:font-medium current:text-fg;
+    @apply after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-line first-of-type:after:top-1.75 last-of-type:after:bottom-1.75;
+    @apply before:absolute before:inset-y-1.75 before:left-0 before:z-1 before:w-px before:scale-y-0 before:rounded-[1px] before:bg-current before:transition-[scale] before:duration-250 before:ease-ios current:before:scale-y-100 motion-reduce:before:transition-none;
+    @apply focus-visible:rounded-[4px] focus-visible:-outline-offset-2;
+  }
+
+  /* Code tabs: bare labels, no horizontal padding, so the underline (as thick as the divider below) is as wide
+     as the text. It grows in under the selected tab and shrinks out of the old one. */
+  .code-tab {
+    @apply relative cursor-pointer text-[13px] text-muted transition-ui hover:text-fg aria-selected:text-fg;
+    @apply after:absolute after:inset-x-0 after:-bottom-px after:h-px after:scale-x-0 after:rounded-[1px] after:bg-current after:transition-[scale] after:duration-200 after:ease-ios aria-selected:after:scale-x-100 motion-reduce:after:transition-none;
+    @apply focus-visible:rounded-[4px] focus-visible:-outline-offset-2;
+  }
+
+  /* Syntax tokens from Shiki's css-variables theme (lib/shiki.ts); punctuation stays the text color. */
+  .tok-keyword {
+    color: var(--color-syntax-keyword);
+  }
+  .tok-string,
+  .tok-string-expression {
+    color: var(--color-syntax-string);
+  }
+  .tok-constant {
+    color: var(--color-syntax-number);
+  }
+  .tok-function,
+  .tok-link {
+    color: var(--color-syntax-function);
+  }
+  .tok-parameter {
+    color: var(--color-syntax-property);
+  }
+  .tok-comment {
+    color: var(--color-subtle);
+    font-style: italic;
+  }
+
+  /* Mail list row. While dragged after a hold (data-peek) or leaving (data-removed), a colored label fades in
+     behind the row with --progress (0..1): one layer whose opacity changes, instead of repainting a
+     color-mix() background on every move. Pair with `group/item`. */
+  .mail-item {
+    @apply relative overflow-hidden border-b border-line select-none data-leaving:pointer-events-none;
+    @apply swiped:bg-surface swiped-delete:[--color:var(--color-danger)] swiped-archive:[--color:var(--color-info)];
+    @apply swiped:before:absolute swiped:before:inset-0 swiped:before:flex swiped:before:items-center swiped:before:bg-(--color) swiped:before:px-4 swiped:before:text-[13px] swiped:before:font-semibold swiped:before:text-white swiped:before:opacity-(--progress,1) swiped:before:will-change-[opacity];
+    @apply swiped-delete:before:justify-end swiped-delete:before:content-['Delete'] swiped-archive:before:content-['Archive'];
+    @apply motion-reduce:transition-none!;
+  }
+}

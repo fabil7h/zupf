@@ -1,0 +1,29 @@
+---
+import { href, pages, type DocPage } from '../lib/nav';
+
+const { page } = Astro.props as { page: DocPage };
+const i = pages.indexOf(page);
+const prev = pages[i - 1];
+const next = pages[i + 1];
+---
+
+<nav class="mt-16 flex justify-between gap-4">
+  {
+    prev ? (
+      <a href={href(prev.slug)} class="pager-link fine-pointer:hover:-translate-x-0.5">
+        <span class="text-xs font-normal text-muted">Previous</span>
+        <strong class="inline-flex items-center gap-1.5 font-medium">{prev.title}</strong>
+      </a>
+    ) : (
+      <span />
+    )
+  }
+  {
+    next && (
+      <a href={href(next.slug)} class="pager-link ml-auto text-right fine-pointer:hover:translate-x-0.5">
+        <span class="text-xs font-normal text-muted">Next</span>
+        <strong class="inline-flex items-center justify-end gap-1.5 font-medium">{next.title}</strong>
+      </a>
+    )
+  }
+</nav>

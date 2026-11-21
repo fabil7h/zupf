@@ -1,0 +1,24 @@
+---
+// "On this page". The section in view is marked by the script in DocsLayout (aria-current="location").
+import { href, type DocPage } from '../lib/nav';
+
+const { page } = Astro.props as { page: DocPage };
+---
+
+{
+  page.toc.length > 1 && (
+    <aside class="mt-6 block" data-toc>
+      <div class="mb-2 text-xs font-semibold text-fg">On this page</div>
+      {page.toc.map((e, i) => (
+        <a
+          class="guide-link"
+          href={href(page.slug, e.id)}
+          data-id={e.id}
+          aria-current={i === 0 ? 'location' : undefined}
+        >
+          {e.title}
+        </a>
+      ))}
+    </aside>
+  )
+}

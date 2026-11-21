@@ -1,0 +1,4 @@
+# Response headers for Cloudflare static assets (wrangler.jsonc serves docs/dist).
+# Astro's build output has content-hashed file names, so it can be cached forever.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

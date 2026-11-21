@@ -1,0 +1,145 @@
+---
+import Icon from '../components/Icon.svelte';
+import MobileNav from '../components/MobileNav.svelte';
+import Nav from '../components/Nav.astro';
+import Pager from '../components/Pager.astro';
+import ThemeToggle from '../components/ThemeToggle.svelte';
+import Toc from '../components/Toc.astro';
+import { href, pageBySlug, tagline } from '../lib/nav';
+import Base from './Base.astro';
+
+const { slug } = Astro.props as { slug: string };
+const page = pageBySlug(slug);
+---
+
+<Base title={`${page.title} · zupf`}>
+  <!-- Everything inside the wrapper is scaled back by `scaleBackground`; sheets move to <body>. -->
+  <div data-zupf-wrapper class="min-h-screen bg-canvas">
+    <header
+      class="sticky top-0 z-10 h-14 border-b border-line bg-canvas/85 touch:bg-canvas fine-pointer:backdrop-blur-sm"
+    >
+      <div
+        class="mx-auto flex h-full w-full max-w-7xl items-center gap-4 pr-12 pl-6 max-md:gap-2 max-md:px-3"
+      >
+        <MobileNav client:load>
+          <div class="pt-1 pb-5">
+            <a href={href('')} class="inline-flex items-center gap-2 font-semibold tracking-[-0.01em]">zupf</a>
+            <span class="mt-1 block text-[13px] text-muted">{tagline}</span>
+          </div>
+          <Nav current={slug} />
+          <Toc page={page} />
+        </MobileNav>
+        <a href={href('')} class="inline-flex items-center gap-2 font-semibold tracking-[-0.01em]">zupf</a>
+        <span class="text-[13px] text-muted max-md:hidden">{tagline}</span>
+        <div class="ml-auto flex gap-1">
+          <a
+            class="icon-button fine-pointer:hover:[&_svg]:motion-safe:animate-wave"
+            href="https://github.com/fabil7h/zupf"
+            aria-label="GitHub repository"
+            title="GitHub"
+          >
+            <Icon name="github" />
+          </a>
+          <ThemeToggle client:load />
+        </div>
+      </div>
+    </header>
+    <div class="mx-auto grid max-w-7xl grid-cols-[240px_minmax(0,1fr)] max-md:grid-cols-[minmax(0,1fr)]">
+      <nav
+        class="sticky top-14 h-[calc(100vh-56px)] self-start overflow-y-auto border-r border-line pt-7 pr-4 pb-7 pl-6 max-md:hidden"
+        aria-label="Documentation"
+      >
+        <Nav current={slug} />
+        <Toc page={page} />
+      </nav>
+      <main class="grid grid-cols-[minmax(0,720px)] px-12 pt-10 pb-24 max-md:px-5 max-md:pt-7 max-md:pb-16">
+        <article>
+          <h1>{page.title}</h1>
+          <slot />
+          <Pager page={page} />
+        </article>
+      </main>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Marks the section in view in every "On this page" list (sidebar, mobile nav) and keeps the URL hash in sync
+  // once the reader scrolls.
+  const ids = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc] a[data-id]')]
+    .map((a) => a.dataset.id!)
+    .filter((id, i, all) => all.indexOf(id) === i);
+
+  if (ids.length) {
+    let frame = 0;
+    let measureFrame = 0;
+    let syncTimer = 0;
+    let syncEnabled = false;
+    let activeId = ids[0];
+    let sectionTops: { id: string; top: number }[] = [];
+    let maxScroll = 0;
+
+    const setActive = (id: string) => {
+      if (id === activeId) return;
+      activeId = id;
+      // Queried each time: the mobile nav's copy moves to <body> when its island hydrates.
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('[data-toc] a[data-id]')) {
+        if (a.dataset.id === id) a.setAttribute('aria-current', 'location');
+        else a.removeAttribute('aria-current');
+      }
+    };
+    const updateActive = (allowBottom = false) => {
+      frame = 0;
+      let next = ids[0];
+      const threshold = window.scrollY + 96;
+      for (const section of sectionTops) {
+        if (section.top > threshold) break;
+        next = section.id;
+      }
+      if (allowBottom && window.scrollY >= maxScroll - 2) next = ids.at(-1)!;
+      setActive(next);
+    };
+    const measure = () => {
+      measureFrame = 0;
+      const scrollY = window.scrollY;
+      sectionTops = ids.flatMap((id) => {
+        const section = document.getElementById(id);
+        return section ? [{ id, top: section.getBoundingClientRect().top + scrollY }] : [];
+      });
+      maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      updateActive();
+    };
+    // Resize events come in bursts (Safari fires ~25 when the body gets fixed), and sections resize while
+    // scrolling (content-visibility renders them on approach): measure at most once a frame.
+    const scheduleMeasure = () => {
+      if (!measureFrame) measureFrame = requestAnimationFrame(measure);
+    };
+    const syncUrl = () => {
+      if (!syncEnabled) return;
+      const hash = `#${activeId}`;
+      if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
+    };
+    const syncEvents = ['pointerdown', 'wheel', 'touchmove', 'keydown'];
+    const enableSync = () => {
+      syncEnabled = true;
+      for (const type of syncEvents) window.removeEventListener(type, enableSync);
+    };
+
+    measure();
+    const article = document.querySelector('main > article');
+    if (article) new ResizeObserver(scheduleMeasure).observe(article);
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!frame) frame = requestAnimationFrame(() => updateActive(true));
+        clearTimeout(syncTimer);
+        syncTimer = window.setTimeout(syncUrl, 120);
+      },
+      { passive: true },
+    );
+    window.addEventListener('resize', scheduleMeasure);
+    for (const type of syncEvents) {
+      window.addEventListener(type, enableSync, { passive: true });
+    }
+  }
+</script>

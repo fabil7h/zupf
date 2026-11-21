@@ -1,0 +1,49 @@
+---
+import '../styles/docs.css';
+import { tagline } from '../lib/nav';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Leave out of search results (the 404 page). */
+  noindex?: boolean;
+}
+const { title, description = tagline, noindex = false } = Astro.props;
+const canonical = Astro.site && new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex ? <meta name="robots" content="noindex" /> : canonical && <link rel="canonical" href={canonical} />}
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='4' y='12' width='24' height='18' rx='5' fill='%2318181b'/><rect x='12' y='15' width='8' height='2' rx='1' fill='%23a1a1aa'/></svg>"
+    />
+    <script is:inline>
+      // Before first paint: the stored theme (data-theme) and the resolved one (data-dark, system as fallback).
+      (() => {
+        const root = document.documentElement;
+        let stored = null;
+        try {
+          stored = localStorage.getItem('zupf-theme');
+        } catch {
+          // Storage blocked (privacy settings, sandboxed frames): follow the system.
+        }
+        if (stored === 'light' || stored === 'dark') root.dataset.theme = stored;
+        const system = matchMedia('(prefers-color-scheme: dark)');
+        const sync = () =>
+          root.toggleAttribute('data-dark', root.dataset.theme ? root.dataset.theme === 'dark' : system.matches);
+        sync();
+        system.addEventListener('change', sync);
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
