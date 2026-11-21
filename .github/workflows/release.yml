@@ -20,7 +20,7 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
-      # Trusted publishing needs npm >= 11.5.1
+      # Trusted publishing and `npm stage` need a recent npm
       - run: npm install -g npm@latest
 
       - name: Check tag matches package.json version
@@ -34,8 +34,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      # prepublishOnly runs vp check, vp test and vp pack first
-      - run: npm publish
+      - run: npx vp check
+      - run: npx vp test
+      - run: npx vp pack
+
+      # Staged: goes live only after approval with 2FA on npmjs.com (or `npm stage approve <id>`)
+      - run: npm stage publish
 
       - run: gh release create "$GITHUB_REF_NAME" --generate-notes
         env:
