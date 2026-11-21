@@ -34,7 +34,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - run: npx vp check
+      # astro check first: it generates docs/.astro types that vp check needs
+      - run: npm run check
       - run: npx vp test
       - run: npx vp pack
 
