@@ -77,7 +77,8 @@
     "test:browser": "vp test --project browser",
     "test:perf": "vp test --project perf",
     "test:size": "vp test --project size",
-    "prepublishOnly": "vp check && vp test && vp pack"
+    "prepublishOnly": "vp check && vp test && vp pack",
+    "release": "bash scripts/release.sh"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
